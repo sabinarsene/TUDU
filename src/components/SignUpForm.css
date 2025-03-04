@@ -1,0 +1,113 @@
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 24px;
+  }
+  
+  .form-field {
+    margin-bottom: 16px;
+  }
+  
+  .form-field label {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 6px;
+    color: #03145c;
+  }
+  
+  .form-field input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .password-input-container {
+    position: relative;
+  }
+  
+  .toggle-password {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+  }
+  
+  .checkbox-field {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  
+  .checkbox-field input {
+    margin-right: 8px;
+    margin-top: 4px;
+  }
+  
+  .checkbox-field label {
+    font-size: 16px;
+    margin-bottom: 0;
+  }
+  
+  .link {
+    color: #0072fe;
+    text-decoration: none;
+  }
+  
+  .auth-button {
+    padding: 8px 16px;
+    background-color: #0072fe;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 16px;
+  }
+  
+  .or-divider {
+    text-align: center;
+    position: relative;
+    margin: 16px 0;
+  }
+  
+  .or-divider::before {
+    content: "";
+    display: block;
+    height: 1px;
+    width: 100%;
+    background-color: #ccc;
+    position: absolute;
+    top: 50%;
+  }
+  
+  .or-divider span {
+    position: relative;
+    background-color: white;
+    padding: 0 8px;
+    color: #666;
+  }
+  
+  .social-login {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .social-button {
+    flex: 1;
+    padding: 8px 16px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  

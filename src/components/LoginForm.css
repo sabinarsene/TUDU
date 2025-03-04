@@ -1,0 +1,129 @@
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 24px;
+  }
+  
+  .form-field {
+    margin-bottom: 16px;
+  }
+  
+  .form-field label {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 6px;
+    color: #03145c;
+  }
+  
+  .form-field input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.2s ease;
+  }
+  
+  .form-field input:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0, 114, 254, 0.1);
+  }
+  
+  .password-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  
+  .forgot-link {
+    color: #0072fe;
+    text-decoration: none;
+    font-size: 16px;
+  }
+  
+  .password-input-container {
+    position: relative;
+  }
+  
+  .toggle-password {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+  }
+  
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .checkbox-field input {
+    margin-right: 8px;
+  }
+  
+  .auth-button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-bottom: 16px;
+  }
+  
+  .auth-button:hover {
+    background-color: var(--dark-blue);
+  }
+  
+  .or-divider {
+    text-align: center;
+    position: relative;
+    margin: 16px 0;
+  }
+  
+  .or-divider::before {
+    content: "";
+    display: block;
+    height: 1px;
+    width: 100%;
+    background-color: #ccc;
+    position: absolute;
+    top: 50%;
+  }
+  
+  .or-divider span {
+    position: relative;
+    background-color: white;
+    padding: 0 8px;
+    color: #666;
+  }
+  
+  .social-login {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .social-button {
+    flex: 1;
+    padding: 8px 16px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  
