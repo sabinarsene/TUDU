@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Filter, MapPin, Star, Plus, Check } from "lucide-react"
+import { Filter, MapPin, Star, Plus, Check, ChevronDown } from "lucide-react"
 import "./HomePage.css"
 import Header from "../components/Header"
 
@@ -99,7 +99,23 @@ const SAMPLE_SERVICES = [
   },
 ]
 
-const CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Educație", "Transport", "Electrocasnice"]
+// Modifică array-ul CATEGORIES pentru a separa categoriile principale de cele secundare
+const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Educație", "Transport"]
+
+const OTHER_CATEGORIES = [
+  "Electrocasnice",
+  "Grădinărit",
+  "IT & Tech",
+  "Design",
+  "Construcții",
+  "Sănătate",
+  "Meditații",
+  "Frumusețe",
+  "Auto",
+  "Juridic",
+  "Contabilitate",
+  "Alte servicii",
+]
 
 const PRICE_RANGES = [
   { label: "Sub 100 RON", min: 0, max: 100 },
@@ -117,12 +133,15 @@ const RATINGS = [
 const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("Toate")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  // Adaugă un nou state pentru a controla afișarea categoriilor suplimentare
+  const [showOtherCategories, setShowOtherCategories] = useState(false)
   const [filters, setFilters] = useState({
     priceRange: null,
     minRating: null,
     location: "",
   })
 
+  // Modifică funcția de filtrare pentru a include și categoriile suplimentare
   // Filter services based on all criteria
   const filteredServices = SAMPLE_SERVICES.filter((service) => {
     // Category filter
@@ -169,8 +188,9 @@ const HomePage = () => {
     <div className="home-page">
       <Header />
 
+      {/* Înlocuiește secțiunea de filtre de categorii cu noua implementare */}
       <div className="category-filters">
-        {CATEGORIES.map((category) => (
+        {MAIN_CATEGORIES.map((category) => (
           <button
             key={category}
             className={`category-button ${selectedCategory === category ? "active" : ""}`}
@@ -179,6 +199,15 @@ const HomePage = () => {
             {category}
           </button>
         ))}
+
+        <button
+          className={`category-button more-categories ${showOtherCategories ? "active" : ""}`}
+          onClick={() => setShowOtherCategories(!showOtherCategories)}
+        >
+          {showOtherCategories ? "Mai puține" : "Altele"}
+          <ChevronDown size={16} className={showOtherCategories ? "rotate" : ""} />
+        </button>
+
         <button
           className={`filter-button ${isFilterOpen ? "active" : ""}`}
           onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -187,6 +216,25 @@ const HomePage = () => {
           <span>Filtre</span>
         </button>
       </div>
+
+      {/* Categorii suplimentare - afișate doar când showOtherCategories este true */}
+      {showOtherCategories && (
+        <div className="other-categories">
+          {OTHER_CATEGORIES.map((category) => (
+            <button
+              key={category}
+              className={`category-button ${selectedCategory === category ? "active" : ""}`}
+              onClick={() => {
+                setSelectedCategory(category)
+                // Opțional: închide panoul de categorii suplimentare după selectare
+                // setShowOtherCategories(false);
+              }}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Filter panel */}
       {isFilterOpen && (

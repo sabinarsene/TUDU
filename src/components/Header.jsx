@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Search, Bell, Menu, X, MessageCircle } from "lucide-react"
+import { Search, Bell, Menu, X, MessageCircle, FileText } from "lucide-react"
 import "./Header.css"
-import logoImage from "../assets/images/favicon.png"
+import logoImage from "../assets/images/logo_wide_black.png"
 
 const Header = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -22,7 +22,7 @@ const Header = () => {
         <div className="header-logo">
           <Link to="/" className="logo-link">
             <img src={logoImage || "/placeholder.svg"} alt="Logo" className="logo-image" />
-            <span className="logo-text">TUDU</span>
+            <span className="logo-text">ServiExpress</span>
           </Link>
         </div>
 
@@ -49,6 +49,9 @@ const Header = () => {
 
         {/* Navigation */}
         <nav className="header-nav">
+          <Link to="/requests" className="nav-icon-link requests-link" title="Cereri">
+            <FileText size={24} />
+          </Link>
           <Link to="/messages" className="nav-icon-link" title="Mesaje">
             <MessageCircle size={24} />
             <span className="notification-badge">3</span>
@@ -86,6 +89,9 @@ const Header = () => {
           <nav className="mobile-nav">
             <Link to="/" className="mobile-nav-item" onClick={toggleMobileMenu}>
               Acasă
+            </Link>
+            <Link to="/requests" className="mobile-nav-item" onClick={toggleMobileMenu}>
+              Cereri de servicii
             </Link>
             <Link to="/profile" className="mobile-nav-item" onClick={toggleMobileMenu}>
               Profilul meu

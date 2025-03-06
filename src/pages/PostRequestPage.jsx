@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { ChevronLeft, Upload, X, Info } from "lucide-react"
-import "./PostServicePage.css"
+import { ChevronLeft, Upload, X, Info, Calendar } from "lucide-react"
+import "./PostRequestPage.css"
 
 const CATEGORIES = [
   "Instalații",
@@ -20,29 +20,40 @@ const CATEGORIES = [
   "Alte servicii",
 ]
 
-const PostServicePage = () => {
+const DEADLINES = [
+  "Urgent (24h)",
+  "În 2-3 zile",
+  "Această săptămână",
+  "Săptămâna viitoare",
+  "În 2 săptămâni",
+  "În această lună",
+  "Flexibil",
+]
+
+const PostRequestPage = () => {
   const navigate = useNavigate()
 
-  // Modifică structura formData pentru a include câmpurile detaliate de locație
   const [formData, setFormData] = useState({
     title: "",
     category: "",
-    price: "",
+    budgetMin: "",
+    budgetMax: "",
     location: {
       county: "",
       city: "",
       street: "",
       number: "",
     },
+    deadline: "",
     description: "",
     images: [],
+    contactPreference: "orice",
   })
 
   const [errors, setErrors] = useState({})
   const [previewImages, setPreviewImages] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Modifică funcția handleChange pentru a gestiona câmpurile nested pentru locație
   const handleChange = (e) => {
     const { name, value } = e.target
 
@@ -124,7 +135,6 @@ const PostServicePage = () => {
     })
   }
 
-  // Modifică funcția validateForm pentru a valida câmpurile de locație
   const validateForm = () => {
     const newErrors = {}
 
@@ -138,10 +148,18 @@ const PostServicePage = () => {
       newErrors.category = "Categoria este obligatorie"
     }
 
-    if (!formData.price) {
-      newErrors.price = "Prețul este obligatoriu"
-    } else if (isNaN(formData.price) || Number.parseFloat(formData.price) <= 0) {
-      newErrors.price = "Prețul trebuie să fie un număr pozitiv"
+    if (!formData.budgetMin) {
+      newErrors.budgetMin = "Bugetul minim este obligatoriu"
+    } else if (isNaN(formData.budgetMin) || Number.parseFloat(formData.budgetMin) < 0) {
+      newErrors.budgetMin = "Bugetul minim trebuie să fie un număr pozitiv"
+    }
+
+    if (!formData.budgetMax) {
+      newErrors.budgetMax = "Bugetul maxim este obligatoriu"
+    } else if (isNaN(formData.budgetMax) || Number.parseFloat(formData.budgetMax) <= 0) {
+      newErrors.budgetMax = "Bugetul maxim trebuie să fie un număr pozitiv"
+    } else if (Number.parseFloat(formData.budgetMax) < Number.parseFloat(formData.budgetMin)) {
+      newErrors.budgetMax = "Bugetul maxim trebuie să fie mai mare decât bugetul minim"
     }
 
     // Validare pentru câmpurile de locație
@@ -153,14 +171,14 @@ const PostServicePage = () => {
       newErrors["location.city"] = "Localitatea este obligatorie"
     }
 
+    if (!formData.deadline) {
+      newErrors.deadline = "Termenul limită este obligatoriu"
+    }
+
     if (!formData.description.trim()) {
       newErrors.description = "Descrierea este obligatorie"
     } else if (formData.description.length < 20) {
       newErrors.description = "Descrierea trebuie să aibă cel puțin 20 de caractere"
-    }
-
-    if (formData.images.length === 0) {
-      newErrors.images = "Trebuie să încarci cel puțin o imagine"
     }
 
     setErrors(newErrors)
@@ -185,12 +203,12 @@ const PostServicePage = () => {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      console.log("Service posted:", formData)
+      console.log("Request posted:", formData)
 
-      // Redirect to home page or service details page
-      navigate("/")
+      // Redirect to requests page
+      navigate("/requests")
     } catch (error) {
-      console.error("Error posting service:", error)
+      console.error("Error posting request:", error)
       setErrors({
         ...errors,
         submit: "A apărut o eroare. Te rugăm să încerci din nou.",
@@ -201,25 +219,25 @@ const PostServicePage = () => {
   }
 
   return (
-    <div className="post-service-page">
+    <div className="post-request-page">
       <header className="page-header">
-        <Link to="/" className="back-button">
+        <Link to="/requests" className="back-button">
           <ChevronLeft size={24} />
         </Link>
-        <h1>Adaugă un serviciu nou</h1>
+        <h1>Adaugă o cerere de servicii</h1>
       </header>
 
-      <form className="service-form" onSubmit={handleSubmit}>
+      <form className="request-form" onSubmit={handleSubmit}>
         <div className="form-section">
           <div className="form-group">
-            <label htmlFor="title">Titlul serviciului *</label>
+            <label htmlFor="title">Titlul cererii *</label>
             <input
               type="text"
               id="title"
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Ex: Reparații instalații sanitare"
+              placeholder="Ex: Caut instalator pentru reparație urgentă"
               className={errors.title ? "error" : ""}
             />
             {errors.title && <div className="error-message">{errors.title}</div>}
@@ -246,77 +264,115 @@ const PostServicePage = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="price">Preț (RON) *</label>
+              <label htmlFor="budgetMin">Buget minim (RON) *</label>
               <input
                 type="number"
-                id="price"
-                name="price"
-                value={formData.price}
+                id="budgetMin"
+                name="budgetMin"
+                value={formData.budgetMin}
                 onChange={handleChange}
-                placeholder="Ex: 150"
+                placeholder="Ex: 100"
                 min="0"
                 step="1"
-                className={errors.price ? "error" : ""}
+                className={errors.budgetMin ? "error" : ""}
               />
-              {errors.price && <div className="error-message">{errors.price}</div>}
+              {errors.budgetMin && <div className="error-message">{errors.budgetMin}</div>}
             </div>
 
             <div className="form-group">
-              <label>Locație *</label>
-              <div className="location-fields">
-                <div className="location-field">
-                  <label htmlFor="county">Județ *</label>
-                  <input
-                    type="text"
-                    id="county"
-                    name="location.county"
-                    value={formData.location.county}
-                    onChange={handleChange}
-                    placeholder="Ex: București"
-                    className={errors["location.county"] ? "error" : ""}
-                  />
-                  {errors["location.county"] && <div className="error-message">{errors["location.county"]}</div>}
-                </div>
+              <label htmlFor="budgetMax">Buget maxim (RON) *</label>
+              <input
+                type="number"
+                id="budgetMax"
+                name="budgetMax"
+                value={formData.budgetMax}
+                onChange={handleChange}
+                placeholder="Ex: 200"
+                min="0"
+                step="1"
+                className={errors.budgetMax ? "error" : ""}
+              />
+              {errors.budgetMax && <div className="error-message">{errors.budgetMax}</div>}
+            </div>
+          </div>
 
-                <div className="location-field">
-                  <label htmlFor="city">Localitate *</label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="location.city"
-                    value={formData.location.city}
-                    onChange={handleChange}
-                    placeholder="Ex: Sector 1"
-                    className={errors["location.city"] ? "error" : ""}
-                  />
-                  {errors["location.city"] && <div className="error-message">{errors["location.city"]}</div>}
-                </div>
+          <div className="form-group">
+            <label>Locație *</label>
+            <div className="location-fields">
+              <div className="location-field">
+                <label htmlFor="county">Județ *</label>
+                <input
+                  type="text"
+                  id="county"
+                  name="location.county"
+                  value={formData.location.county}
+                  onChange={handleChange}
+                  placeholder="Ex: București"
+                  className={errors["location.county"] ? "error" : ""}
+                />
+                {errors["location.county"] && <div className="error-message">{errors["location.county"]}</div>}
+              </div>
 
-                <div className="location-field">
-                  <label htmlFor="street">Stradă</label>
-                  <input
-                    type="text"
-                    id="street"
-                    name="location.street"
-                    value={formData.location.street}
-                    onChange={handleChange}
-                    placeholder="Ex: Strada Victoriei"
-                  />
-                </div>
+              <div className="location-field">
+                <label htmlFor="city">Localitate *</label>
+                <input
+                  type="text"
+                  id="city"
+                  name="location.city"
+                  value={formData.location.city}
+                  onChange={handleChange}
+                  placeholder="Ex: Sector 1"
+                  className={errors["location.city"] ? "error" : ""}
+                />
+                {errors["location.city"] && <div className="error-message">{errors["location.city"]}</div>}
+              </div>
 
-                <div className="location-field">
-                  <label htmlFor="number">Număr</label>
-                  <input
-                    type="text"
-                    id="number"
-                    name="location.number"
-                    value={formData.location.number}
-                    onChange={handleChange}
-                    placeholder="Ex: 10"
-                  />
-                </div>
+              <div className="location-field">
+                <label htmlFor="street">Stradă</label>
+                <input
+                  type="text"
+                  id="street"
+                  name="location.street"
+                  value={formData.location.street}
+                  onChange={handleChange}
+                  placeholder="Ex: Strada Victoriei"
+                />
+              </div>
+
+              <div className="location-field">
+                <label htmlFor="number">Număr</label>
+                <input
+                  type="text"
+                  id="number"
+                  name="location.number"
+                  value={formData.location.number}
+                  onChange={handleChange}
+                  placeholder="Ex: 10"
+                />
               </div>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="deadline">Termen limită *</label>
+            <div className="deadline-input">
+              <Calendar size={18} className="deadline-icon" />
+              <select
+                id="deadline"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleChange}
+                className={errors.deadline ? "error" : ""}
+              >
+                <option value="">Selectează termenul limită</option>
+                {DEADLINES.map((deadline) => (
+                  <option key={deadline} value={deadline}>
+                    {deadline}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {errors.deadline && <div className="error-message">{errors.deadline}</div>}
           </div>
 
           <div className="form-group">
@@ -326,7 +382,7 @@ const PostServicePage = () => {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Descrie serviciul tău în detaliu. Include informații despre experiența ta, ce oferă serviciul, durata, etc."
+              placeholder="Descrie în detaliu ce servicii cauți, cerințe specifice, detalii importante, etc."
               rows="6"
               className={errors.description ? "error" : ""}
             ></textarea>
@@ -336,7 +392,7 @@ const PostServicePage = () => {
 
         <div className="form-section">
           <div className="form-group">
-            <label>Imagini *</label>
+            <label>Imagini (opțional)</label>
             <div className="image-upload-container">
               <div className="image-upload-area">
                 <input
@@ -372,10 +428,46 @@ const PostServicePage = () => {
             </div>
           </div>
 
+          <div className="form-group">
+            <label>Preferință de contact</label>
+            <div className="contact-options">
+              <label className="contact-option">
+                <input
+                  type="radio"
+                  name="contactPreference"
+                  value="orice"
+                  checked={formData.contactPreference === "orice"}
+                  onChange={handleChange}
+                />
+                <span>Orice metodă</span>
+              </label>
+              <label className="contact-option">
+                <input
+                  type="radio"
+                  name="contactPreference"
+                  value="mesaj"
+                  checked={formData.contactPreference === "mesaj"}
+                  onChange={handleChange}
+                />
+                <span>Doar mesaje</span>
+              </label>
+              <label className="contact-option">
+                <input
+                  type="radio"
+                  name="contactPreference"
+                  value="telefon"
+                  checked={formData.contactPreference === "telefon"}
+                  onChange={handleChange}
+                />
+                <span>Doar telefon</span>
+              </label>
+            </div>
+          </div>
+
           <div className="form-notice">
             <Info size={18} />
             <p>
-              Prin postarea acestui serviciu, confirmi că respectă
+              Prin postarea acestei cereri, confirmi că respectă
               <Link to="/terms" className="notice-link">
                 {" "}
                 Termenii și Condițiile
@@ -387,11 +479,11 @@ const PostServicePage = () => {
           {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
 
           <div className="form-actions">
-            <Link to="/" className="cancel-button">
+            <Link to="/requests" className="cancel-button">
               Anulează
             </Link>
             <button type="submit" className="submit-button" disabled={isSubmitting}>
-              {isSubmitting ? "Se postează..." : "Publică serviciul"}
+              {isSubmitting ? "Se postează..." : "Publică cererea"}
             </button>
           </div>
         </div>
@@ -400,5 +492,5 @@ const PostServicePage = () => {
   )
 }
 
-export default PostServicePage
+export default PostRequestPage
 
