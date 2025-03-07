@@ -3,17 +3,17 @@
   top: 0;
   z-index: 1000;
   background-color: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .header-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: 12px 16px;
   max-width: 1280px;
   margin: 0 auto;
-  height: 72px;
+  height: 80px;
 }
 
 /* Logo styles */
@@ -27,24 +27,33 @@
   align-items: center;
   text-decoration: none;
   color: var(--dark-blue);
+  font-weight: 700;
 }
 
 .logo-image {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
 }
 
 .logo-text {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  margin-left: 8px;
+  margin-left: 10px;
   display: none;
+  background: linear-gradient(45deg, var(--blue), var(--dark-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 @media (min-width: 640px) {
   .logo-text {
     display: block;
+  }
+
+  .logo-image {
+    width: 60px;
+    height: 60px;
   }
 }
 
@@ -56,6 +65,7 @@
   transition: all 0.3s ease;
 }
 
+/* Update search input container and clear button positioning */
 .search-container {
   position: relative;
   width: 100%;
@@ -63,12 +73,31 @@
 
 .search-input {
   width: 100%;
-  padding: 12px 16px 12px 44px;
+  padding: 14px 16px 14px 44px;
   border: 1px solid #e2e8f0;
   border-radius: 24px;
   font-size: 16px;
   background-color: var(--off-white);
   transition: all 0.3s ease;
+  padding-right: 40px; /* Add space for the clear button */
+}
+
+.clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
 }
 
 .search-input:focus {
@@ -88,27 +117,6 @@
   top: 50%;
   transform: translateY(-50%);
   color: #666;
-}
-
-.clear-search {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #e2e8f0;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #666;
-}
-
-.clear-search:hover {
-  background: #cbd5e1;
 }
 
 /* Navigation styles */
@@ -141,13 +149,14 @@
   background-color: var(--pink);
   color: white;
   font-size: 12px;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  box-shadow: 0 2px 4px rgba(255, 29, 104, 0.4);
 }
 
 .profile-link {
@@ -157,11 +166,11 @@
 }
 
 .profile-image {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--blue);
+  border: 3px solid var(--blue);
 }
 
 .mobile-profile-image {
@@ -319,5 +328,47 @@
   .header-search {
     max-width: none;
   }
+}
+
+/* Update conversation item to prevent timestamp/badge overlap */
+.conversation-item {
+  display: flex;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: white;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+}
+
+.conversation-content {
+  flex: 1;
+  min-width: 0;
+  padding-right: 40px; /* Add space for the badge */
+}
+
+.message-time {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+}
+
+.unread-badge {
+  position: absolute;
+  right: 16px;
+  top: 40px; /* Position below the timestamp */
+  min-width: 20px;
+  height: 20px;
+  background-color: var(--blue);
+  color: white;
+  border-radius: 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
 }
 

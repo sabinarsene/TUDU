@@ -6,6 +6,7 @@ import { Filter, MapPin, Star, Plus, Check, ChevronDown } from "lucide-react"
 import "./HomePage.css"
 import Header from "../components/Header"
 
+// Actualizăm SAMPLE_SERVICES pentru a folosi calea corectă spre imaginile de profil
 const SAMPLE_SERVICES = [
   {
     id: 1,
@@ -18,7 +19,7 @@ const SAMPLE_SERVICES = [
     reviews: 24,
     provider: {
       name: "Alexandru M.",
-      image: "/placeholder.svg?height=50&width=50",
+      image: "./profile-photos/alex.jpg", // Calea actualizată
     },
     image: "/placeholder.svg?height=200&width=300",
   },
@@ -32,8 +33,8 @@ const SAMPLE_SERVICES = [
     rating: 4.6,
     reviews: 18,
     provider: {
-      name: "Maria D.",
-      image: "/placeholder.svg?height=50&width=50",
+      name: "Denis V.",
+      image: "./profile-photos/denis.jpg", // Calea actualizată
     },
     image: "/placeholder.svg?height=200&width=300",
   },
@@ -47,8 +48,8 @@ const SAMPLE_SERVICES = [
     rating: 4.9,
     reviews: 32,
     provider: {
-      name: "Mihai P.",
-      image: "/placeholder.svg?height=50&width=50",
+      name: "Florin P.",
+      image: "./profile-photos/florin.jpg", // Calea actualizată
     },
     image: "/placeholder.svg?height=200&width=300",
   },
@@ -62,8 +63,8 @@ const SAMPLE_SERVICES = [
     rating: 5.0,
     reviews: 15,
     provider: {
-      name: "Andreea C.",
-      image: "/placeholder.svg?height=50&width=50",
+      name: "Stefan C.",
+      image: "./profile-photos/stefan.jpg", // Calea actualizată
     },
     image: "/placeholder.svg?height=200&width=300",
   },
@@ -77,8 +78,8 @@ const SAMPLE_SERVICES = [
     rating: 4.7,
     reviews: 41,
     provider: {
-      name: "Cristian V.",
-      image: "/placeholder.svg?height=50&width=50",
+      name: "Vlad T.",
+      image: "./profile-photos/vlad.jpg", // Calea actualizată
     },
     image: "/placeholder.svg?height=200&width=300",
   },
@@ -92,8 +93,8 @@ const SAMPLE_SERVICES = [
     rating: 4.5,
     reviews: 28,
     provider: {
-      name: "Bogdan T.",
-      image: "/placeholder.svg?height=50&width=50",
+      name: "Alexandru M.",
+      image: "./profile-photos/alex.jpg", // Calea actualizată
     },
     image: "/placeholder.svg?height=200&width=300",
   },

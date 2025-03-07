@@ -1,0 +1,94 @@
+.success-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--off-white);
+    padding: 16px;
+  }
+  
+  .success-card {
+    background-color: white;
+    border-radius: 16px;
+    padding: 40px 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .success-icon {
+    color: var(--green);
+    margin-bottom: 24px;
+    animation: scaleIn 0.5s ease-out 0.2s both;
+  }
+  
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.8);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+  
+  .success-title {
+    font-size: 28px;
+    color: var(--dark-blue);
+    margin-bottom: 16px;
+  }
+  
+  .success-message {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+  
+  .success-button {
+    display: inline-block;
+    background-color: var(--blue);
+    color: white;
+    font-weight: 600;
+    padding: 14px 48px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 114, 254, 0.3);
+  }
+  
+  .success-button:hover {
+    background-color: var(--dark-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 114, 254, 0.4);
+  }
+  
+  @media (max-width: 480px) {
+    .success-card {
+      padding: 32px 16px;
+    }
+  
+    .success-icon svg {
+      width: 60px;
+      height: 60px;
+    }
+  
+    .success-title {
+      font-size: 24px;
+    }
+  }
+  
+  

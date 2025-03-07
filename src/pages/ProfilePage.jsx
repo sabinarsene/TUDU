@@ -2,17 +2,18 @@
 
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { ChevronLeft, Star, Settings, Edit, MapPin, Calendar, MessageCircle } from "lucide-react"
+import { ChevronLeft, Star, Settings, Edit, MapPin, Calendar, MessageCircle, Clock, CheckCircle } from "lucide-react"
 import "./ProfilePage.css"
 
+// Update SAMPLE_USER to use real profile photo
 const SAMPLE_USER = {
   id: 1,
   name: "Alexandru Munteanu",
-  image: "/placeholder.svg?height=120&width=120",
+  image: "./profile-photos/alex.jpg", // Calea actualizată
   location: "București, România",
   memberSince: "Aprilie 2023",
   rating: 4.8,
-  reviewCount: 24, // Renamed from 'reviews' to 'reviewCount'
+  reviewCount: 24,
   bio: "Instalator profesionist cu peste 10 ani de experiență în domeniu. Specializat în reparații și instalații sanitare pentru apartamente și case.",
   services: [
     {
@@ -32,12 +33,42 @@ const SAMPLE_USER = {
       image: "/placeholder.svg?height=80&width=120",
     },
   ],
+  bookedServices: [
+    {
+      id: 101,
+      title: "Curățenie apartament",
+      category: "Curățenie",
+      price: 200,
+      currency: "RON",
+      image: "/placeholder.svg?height=80&width=120",
+      provider: {
+        name: "Denis V.",
+        rating: 4.9,
+      },
+      status: "completed",
+      date: "15 Iunie 2023",
+    },
+    {
+      id: 102,
+      title: "Transport mobilă",
+      category: "Transport",
+      price: 300,
+      currency: "RON",
+      image: "/placeholder.svg?height=80&width=120",
+      provider: {
+        name: "Vlad T.",
+        rating: 4.7,
+      },
+      status: "scheduled",
+      date: "25 Iulie 2023",
+    },
+  ],
   reviews: [
     {
       id: 1,
       user: {
-        name: "Maria D.",
-        image: "/placeholder.svg?height=50&width=50",
+        name: "Florin P.",
+        image: "./profile-photos/florin.jpg", // Calea actualizată
       },
       rating: 5,
       date: "15 Iulie 2023",
@@ -46,8 +77,8 @@ const SAMPLE_USER = {
     {
       id: 2,
       user: {
-        name: "Andrei P.",
-        image: "/placeholder.svg?height=50&width=50",
+        name: "Stefan C.",
+        image: "./profile-photos/stefan.jpg", // Calea actualizată
       },
       rating: 4,
       date: "3 Iunie 2023",
@@ -117,7 +148,13 @@ const ProfilePage = () => {
           className={`tab-button ${activeTab === "services" ? "active" : ""}`}
           onClick={() => setActiveTab("services")}
         >
-          Servicii
+          Servicii oferite
+        </button>
+        <button
+          className={`tab-button ${activeTab === "booked" ? "active" : ""}`}
+          onClick={() => setActiveTab("booked")}
+        >
+          Servicii rezervate
         </button>
         <button
           className={`tab-button ${activeTab === "reviews" ? "active" : ""}`}
@@ -144,6 +181,62 @@ const ProfilePage = () => {
             ))}
             <Link to="/post-service" className="add-service-button">
               + Adaugă un serviciu nou
+            </Link>
+          </div>
+        )}
+
+        {activeTab === "booked" && (
+          <div className="booked-services-list">
+            {SAMPLE_USER.bookedServices.map((service) => (
+              <div key={service.id} className="booked-service-item">
+                <img src={service.image || "/placeholder.svg"} alt={service.title} className="service-thumbnail" />
+                <div className="service-details">
+                  <h4>{service.title}</h4>
+                  <span className="service-category">{service.category}</span>
+                  <div className="service-provider">
+                    <span>Prestator: {service.provider.name}</span>
+                    <div className="provider-rating">
+                      <Star size={14} fill="#ffc939" color="#ffc939" />
+                      <span>{service.provider.rating}</span>
+                    </div>
+                  </div>
+                  <div className="service-booking-details">
+                    <div className="booking-date">
+                      <Calendar size={14} />
+                      <span>{service.date}</span>
+                    </div>
+                    <div className="booking-status">
+                      <span className={`status-badge ${service.status}`}>
+                        {service.status === "completed" ? (
+                          <>
+                            <CheckCircle size={14} /> Finalizat
+                          </>
+                        ) : (
+                          <>
+                            <Clock size={14} /> Programat
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="service-price">
+                    {service.price} {service.currency}
+                  </span>
+                </div>
+                <div className="booked-service-actions">
+                  <Link to={`/messages`} className="action-link">
+                    Contactează
+                  </Link>
+                  {service.status === "completed" && (
+                    <Link to={`/review/${service.id}`} className="action-link">
+                      Lasă o recenzie
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
+            <Link to="/" className="find-service-button">
+              Caută servicii noi
             </Link>
           </div>
         )}

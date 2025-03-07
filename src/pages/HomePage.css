@@ -1,3 +1,4 @@
+/* Îmbunătățim aspectul general al paginii */
 .home-page {
   min-height: 100vh;
   background-color: var(--off-white);
@@ -5,15 +6,16 @@
   padding-bottom: 80px;
 }
 
-/* Category filters */
+/* Îmbunătățim aspectul filtrelor de categorii */
 .category-filters {
   display: flex;
   overflow-x: auto;
   padding: 16px;
   background-color: white;
-  gap: 8px;
+  gap: 10px;
   scrollbar-width: none; /* Firefox */
   border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .category-filters::-webkit-scrollbar {
@@ -21,31 +23,34 @@
 }
 
 .category-button {
-  padding: 8px 16px;
+  padding: 10px 18px;
   border: 1px solid #e2e8f0;
-  border-radius: 20px;
+  border-radius: 24px;
   background-color: white;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .category-button.active {
-  background-color: var(--blue);
+  background: linear-gradient(135deg, var(--blue), #3390ff);
   color: white;
   border-color: var(--blue);
+  box-shadow: 0 2px 8px rgba(0, 114, 254, 0.3);
 }
 
 .filter-button {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
+  gap: 6px;
+  padding: 10px 18px;
   border: 1px solid #e2e8f0;
-  border-radius: 20px;
+  border-radius: 24px;
   background-color: white;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   margin-left: auto;
@@ -53,9 +58,10 @@
 }
 
 .filter-button.active {
-  background-color: var(--blue);
+  background: linear-gradient(135deg, var(--blue), #3390ff);
   color: white;
   border-color: var(--blue);
+  box-shadow: 0 2px 8px rgba(0, 114, 254, 0.3);
 }
 
 /* Adaugă stiluri pentru butonul de categorii suplimentare */
@@ -100,24 +106,27 @@
   padding: 20px;
 }
 
+/* Îmbunătățim aspectul cardurilor de servicii */
 .service-card {
   background-color: white;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
   text-decoration: none;
   color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .service-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: var(--blue);
 }
 
 .service-image-container {
   position: relative;
-  height: 160px;
+  height: 180px;
 }
 
 .service-image {
@@ -130,85 +139,95 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  background-color: rgba(0, 0, 0, 0.6);
+  background: linear-gradient(135deg, var(--blue), #3390ff);
   color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
   font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 114, 254, 0.3);
 }
 
 .service-content {
-  padding: 16px;
+  padding: 20px;
 }
 
 .service-title {
   font-size: 18px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: var(--dark-blue);
+  font-weight: 600;
 }
 
 .service-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .service-location,
 .service-rating {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .service-provider {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .provider-image {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid var(--blue);
 }
 
 .provider-name {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .service-price {
   font-weight: bold;
-  color: var(--dark-blue);
-  font-size: 18px;
+  color: var(--blue);
+  font-size: 20px;
 }
 
 /* Post service button */
+/* Îmbunătățim aspectul butonului de postare */
 .post-service-button {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background-color: var(--blue);
+  background: linear-gradient(135deg, var(--blue), #3390ff);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 114, 254, 0.4);
+  box-shadow: 0 6px 16px rgba(0, 114, 254, 0.4);
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition: all 0.2s ease;
   text-decoration: none;
+  z-index: 100;
 }
 
 .post-service-button:hover {
-  transform: scale(1.05);
-  background-color: var(--dark-blue);
+  transform: scale(1.1) rotate(5deg);
+  background: linear-gradient(135deg, #0060d6, #2080ff);
+  box-shadow: 0 8px 24px rgba(0, 114, 254, 0.5);
 }
 
 /* Add these new styles for the filter panel */

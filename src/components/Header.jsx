@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Search, Bell, Menu, X, MessageCircle, FileText } from "lucide-react"
 import "./Header.css"
-import logoImage from "../assets/images/logo_wide_black.png"
+import logoImage from "../assets/images/favicon.png"
 
 const Header = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -22,7 +22,7 @@ const Header = () => {
         <div className="header-logo">
           <Link to="/" className="logo-link">
             <img src={logoImage || "/placeholder.svg"} alt="Logo" className="logo-image" />
-            <span className="logo-text">ServiExpress</span>
+            <span className="logo-text">TUDU</span>
           </Link>
         </div>
 
@@ -61,7 +61,7 @@ const Header = () => {
             <span className="notification-badge">5</span>
           </Link>
           <Link to="/profile" className="profile-link">
-            <img src="/placeholder.svg?height=40&width=40" alt="Profile" className="profile-image" />
+            <img src="./profile-photos/alex.jpg" alt="Profile" className="profile-image" />
           </Link>
 
           {/* Mobile Menu Button */}
@@ -79,7 +79,7 @@ const Header = () => {
       <div className={`mobile-menu ${isMobileMenuOpen ? "open" : ""}`}>
         <div className="mobile-menu-content">
           <div className="mobile-menu-header">
-            <img src="/placeholder.svg?height=60&width=60" alt="Profile" className="mobile-profile-image" />
+            <img src="./profile-photos/alex.jpg" alt="Profile" className="mobile-profile-image" />
             <div className="mobile-profile-info">
               <h3>Alexandru Munteanu</h3>
               <p>Vezi profilul tău</p>

@@ -438,7 +438,8 @@ const RequestsPage = () => {
       </main>
 
       <Link to="/post-request" className="post-request-button">
-        <Plus size={24} />
+        <Plus size={20} />
+        <span>Postează o cerere</span>
       </Link>
     </div>
   )

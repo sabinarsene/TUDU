@@ -9,6 +9,7 @@ body {
     "Helvetica Neue", sans-serif;
   line-height: 1.5;
   color: #22211f;
+  background-color: var(--off-white);
 }
 
 /* Color variables based on the provided palette */
@@ -21,5 +22,57 @@ body {
   --green: #30c979;
   --off-white: #f8f4f0;
   --almost-black: #22211f;
+
+  /* Adăugăm variante de culori pentru hover și focus */
+  --blue-dark: #0060d6;
+  --pink-dark: #e01a5f;
+  --yellow-dark: #e6b533;
+  --green-dark: #27a866;
+
+  /* Adăugăm culori pentru fundal și text */
+  --bg-light: #ffffff;
+  --bg-accent: #f0f7ff;
+  --text-primary: #22211f;
+  --text-secondary: #555555;
+  --text-muted: #777777;
+
+  /* Adăugăm culori pentru border și shadow */
+  --border-light: #e2e8f0;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Stiluri pentru butoane */
+button,
+.button {
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Stiluri pentru link-uri */
+a {
+  color: var(--blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--blue-dark);
+}
+
+/* Stiluri pentru card-uri */
+.card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 

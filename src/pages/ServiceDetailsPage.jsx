@@ -29,7 +29,7 @@ const SAMPLE_SERVICES = {
     priceType: "pe oră",
     location: "București",
     rating: 4.8,
-    reviewCount: 24, // Modificat din 'reviews' în 'reviewCount'
+    reviewCount: 24,
     description: `Ofer servicii profesionale de reparații instalații sanitare pentru apartamente și case. 
     
     Serviciile includ:
@@ -49,7 +49,7 @@ const SAMPLE_SERVICES = {
     provider: {
       id: 101,
       name: "Alexandru Munteanu",
-      image: "/placeholder.svg?height=100&width=100",
+      image: "./profile-photos/alex.jpg", // Calea actualizată
       rating: 4.8,
       reviewCount: 42,
       responseTime: "sub 1 oră",
@@ -64,8 +64,8 @@ const SAMPLE_SERVICES = {
       {
         id: 1,
         user: {
-          name: "Maria D.",
-          image: "/placeholder.svg?height=50&width=50",
+          name: "Denis V.",
+          image: "./profile-photos/denis.jpg", // Calea actualizată
         },
         rating: 5,
         date: "15 Iulie 2023",
@@ -74,8 +74,8 @@ const SAMPLE_SERVICES = {
       {
         id: 2,
         user: {
-          name: "Andrei P.",
-          image: "/placeholder.svg?height=50&width=50",
+          name: "Florin P.",
+          image: "./profile-photos/florin.jpg", // Calea actualizată
         },
         rating: 4,
         date: "3 Iunie 2023",
@@ -84,8 +84,8 @@ const SAMPLE_SERVICES = {
       {
         id: 3,
         user: {
-          name: "Elena M.",
-          image: "/placeholder.svg?height=50&width=50",
+          name: "Stefan C.",
+          image: "./profile-photos/stefan.jpg", // Calea actualizată
         },
         rating: 5,
         date: "22 Mai 2023",
@@ -104,7 +104,7 @@ const SAMPLE_SERVICES = {
     priceType: "pe ședință",
     location: "Cluj-Napoca",
     rating: 4.6,
-    reviewCount: 18, // Modificat din 'reviews' în 'reviewCount'
+    reviewCount: 18,
     description:
       "Servicii profesionale de curățenie pentru apartamente și case. Folosesc produse eco-friendly și echipamente profesionale. Experiență de peste 5 ani în domeniu.",
     images: ["/placeholder.svg?height=400&width=600", "/placeholder.svg?height=400&width=600"],
@@ -134,7 +134,7 @@ const SAMPLE_SERVICES = {
     priceType: "pe serviciu",
     location: "Timișoara",
     rating: 4.9,
-    reviewCount: 32, // Modificat din 'reviews' în 'reviewCount'
+    reviewCount: 32,
     description:
       "Servicii de montaj mobilă la domiciliu. Montez orice tip de mobilier, inclusiv IKEA, Dedeman, Jysk etc. Experiență și profesionalism.",
     images: [
@@ -168,7 +168,7 @@ const SAMPLE_SERVICES = {
     priceType: "pe oră",
     location: "Iași",
     rating: 5.0,
-    reviewCount: 15, // Modificat din 'reviews' în 'reviewCount'
+    reviewCount: 15,
     description:
       "Ofer lecții de pian pentru toate nivelurile, de la începători la avansați. Absolventă a Conservatorului, cu experiență de predare de peste 8 ani.",
     images: ["/placeholder.svg?height=400&width=600"],
@@ -198,7 +198,7 @@ const SAMPLE_SERVICES = {
     priceType: "pe serviciu",
     location: "Brașov",
     rating: 4.7,
-    reviewCount: 41, // Modificat din 'reviews' în 'reviewCount'
+    reviewCount: 41,
     description:
       "Transport marfă și mutări în Brașov și împrejurimi. Dubă spațioasă, servicii rapide și sigure. Disponibil și pentru transporturi în afara orașului.",
     images: ["/placeholder.svg?height=400&width=600", "/placeholder.svg?height=400&width=600"],
@@ -228,7 +228,7 @@ const SAMPLE_SERVICES = {
     priceType: "pe oră",
     location: "Constanța",
     rating: 4.5,
-    reviewCount: 28, // Modificat din 'reviews' în 'reviewCount'
+    reviewCount: 28,
     description:
       "Reparații pentru toate tipurile de electrocasnice: frigidere, mașini de spălat, cuptoare, plite etc. Deplasare la domiciliu în Constanța și împrejurimi.",
     images: [
