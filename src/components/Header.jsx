@@ -50,7 +50,7 @@ const Header = () => {
         {/* Navigation */}
         <nav className="header-nav">
           <Link to="/requests" className="nav-icon-link requests-link" title="Cereri">
-            <FileText size={24} />
+            Cereri
           </Link>
           <Link to="/messages" className="nav-icon-link" title="Mesaje">
             <MessageCircle size={24} />

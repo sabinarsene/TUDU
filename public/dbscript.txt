@@ -1,0 +1,148 @@
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  profile_image VARCHAR(255),
+  location VARCHAR(100),
+  member_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  rating DECIMAL(3, 1),
+  review_count INTEGER DEFAULT 0,
+  bio TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE services (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  price DECIMAL(10, 2) NOT NULL,
+  currency VARCHAR(10) DEFAULT 'RON',
+  location VARCHAR(100) NOT NULL,
+  rating DECIMAL(3, 1),
+  review_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE service_images (
+  id SERIAL PRIMARY KEY,
+  service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
+  image_url VARCHAR(255) NOT NULL,
+  is_main BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE requests (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  budget DECIMAL(10, 2),
+  currency VARCHAR(10) DEFAULT 'RON',
+  location VARCHAR(100) NOT NULL,
+  deadline TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE request_images (
+  id SERIAL PRIMARY KEY,
+  request_id INTEGER REFERENCES requests(id) ON DELETE CASCADE,
+  image_url VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE reviews (
+  id SERIAL PRIMARY KEY,
+  service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+CREATE TABLE bookings (
+  id SERIAL PRIMARY KEY,
+  service_id INTEGER REFERENCES services(id) ON DELETE SET NULL,
+  client_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  provider_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(50) DEFAULT 'pending',
+  price DECIMAL(10, 2) NOT NULL,
+  currency VARCHAR(10) DEFAULT 'RON',
+  booking_date TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE conversations (
+  id SERIAL PRIMARY KEY,
+  user1_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  user2_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user1_id, user2_id)
+);
+
+
+CREATE TABLE messages (
+  id SERIAL PRIMARY KEY,
+  conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
+  sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+CREATE TABLE notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(50) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  related_id INTEGER,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+CREATE TABLE offers (
+  id SERIAL PRIMARY KEY,
+  request_id INTEGER REFERENCES requests(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  price DECIMAL(10, 2) NOT NULL,
+  currency VARCHAR(10) DEFAULT 'RON',
+  description TEXT NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE favorites (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, service_id)
+);
+
+
+SELECT usename, passwd FROM pg_shadow;

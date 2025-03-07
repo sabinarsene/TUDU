@@ -1,24 +1,43 @@
 "use client"
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "./LoginForm.css"
 import { Eye } from "lucide-react"
+import { login } from "../services/authService"
+import { useAuth } from "../contexts/AuthContext"
 
 const LoginForm = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const navigate = useNavigate()
+  const { loginUser } = useAuth()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log("Email:", email)
-    console.log("Password:", password)
-    console.log("Remember Me:", rememberMe)
+    setError("")
+    setIsLoading(true)
+    
+    try {
+      const response = await login(email, password)
+      loginUser(response.user)
+      navigate("/") // Redirecționare către pagina principală după login
+    } catch (error) {
+      setError(error.message || "Login failed. Please check your credentials.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
+      {error && <div className="error-message">{error}</div>}
+      
       <div className="form-field">
         <label htmlFor="email">Email</label>
         <input
@@ -58,8 +77,8 @@ const LoginForm = () => {
         <label htmlFor="remember">Remember me</label>
       </div>
 
-      <button type="submit" className="auth-button">
-        Login
+      <button type="submit" className="auth-button" disabled={isLoading}>
+        {isLoading ? "Loading..." : "Login"}
       </button>
 
       <div className="or-divider">

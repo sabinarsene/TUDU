@@ -12,26 +12,30 @@ import RequestsPage from "./pages/RequestsPage"
 import PostRequestPage from "./pages/PostRequestPage"
 import RequestDetailsPage from "./pages/RequestDetailsPage"
 import "./App.css"
+import { AuthProvider } from "./contexts/AuthContext"
+import ProtectedRoute from "./components/ProtectedRoute"
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/post-service" element={<PostServicePage />} />
-        <Route path="/post-request" element={<PostRequestPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/messages" element={<MessagesPage />} />
-        <Route path="/messages/:conversationId" element={<MessagesPage />} />
-        <Route path="/service/:serviceId" element={<ServiceDetailsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/requests" element={<RequestsPage />} />
-        <Route path="/request/:requestId" element={<RequestDetailsPage />} />
-        <Route path="/" element={<HomePage />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/post-service" element={<ProtectedRoute><PostServicePage /></ProtectedRoute>} />
+          <Route path="/post-request" element={<PostRequestPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/messages/:conversationId" element={<MessagesPage />} />
+          <Route path="/service/:serviceId" element={<ServiceDetailsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/requests" element={<RequestsPage />} />
+          <Route path="/request/:requestId" element={<RequestDetailsPage />} />
+          <Route path="/" element={<HomePage />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   )
 }
 

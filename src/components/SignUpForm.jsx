@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "./SignUpForm.css"
 import { Eye } from "lucide-react"
+import { register } from "../services/authService"
 
 const SignUpForm = () => {
   const [firstName, setFirstName] = useState("")
@@ -13,25 +15,46 @@ const SignUpForm = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreeTerms, setAgreeTerms] = useState(false)
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError("")
+    
     if (password !== confirmPassword) {
-      alert("Passwords do not match!")
+      setError("Passwords do not match!")
       return
     }
+    
     if (!agreeTerms) {
-      alert("You must agree to the Terms of Service and Privacy Policy")
+      setError("You must agree to the Terms of Service and Privacy Policy")
       return
     }
-    console.log("First Name:", firstName)
-    console.log("Last Name:", lastName)
-    console.log("Email:", email)
-    console.log("Password:", password)
+    
+    setIsLoading(true)
+    
+    try {
+      await register({
+        firstName,
+        lastName,
+        email,
+        password
+      })
+      navigate("/") // Redirecționare către pagina principală după înregistrare
+    } catch (error) {
+      setError(error.message || "Registration failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
+      {error && <div className="error-message">{error}</div>}
+      
       <div className="form-field">
         <label htmlFor="firstName">First name</label>
         <input
@@ -120,8 +143,8 @@ const SignUpForm = () => {
         </label>
       </div>
 
-      <button type="submit" className="auth-button">
-        Create Account
+      <button type="submit" className="auth-button" disabled={isLoading}>
+        {isLoading ? "Creating account..." : "Create Account"}
       </button>
 
       <div className="or-divider">
