@@ -86,11 +86,20 @@ const RequestsPage = () => {
       try {
         setLoading(true)
         const data = await fetchRequests()
-        setRequests(data)
+        
+        if (!data || data.length === 0) {
+          console.log("No requests found or empty array returned")
+          setRequests([])
+          // Nu setăm eroare, doar afișăm un mesaj în UI
+        } else {
+          setRequests(data)
+        }
+        
         setError(null)
       } catch (err) {
         console.error("Error fetching requests:", err)
         setError("Nu am putut încărca cererile. Vă rugăm încercați din nou mai târziu.")
+        setRequests([]) // Asigurăm că avem un array gol în caz de eroare
       } finally {
         setLoading(false)
       }

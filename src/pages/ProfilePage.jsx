@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ChevronLeft, Star, Settings, Edit, MapPin, Calendar, MessageCircle, Clock, CheckCircle, Briefcase, LogOut, Loader, AlertTriangle } from "lucide-react"
+import { ChevronLeft, Star, Settings, Edit, MapPin, Calendar, MessageCircle, Clock, CheckCircle, Briefcase, LogOut, Loader, AlertTriangle, Trash2 } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import "./ProfilePage.css"
-import { fetchServices } from "../services/serviceApi"
+import { fetchServices, deleteService } from "../services/serviceApi"
 import { FaMapMarkerAlt, FaClock, FaEye } from 'react-icons/fa'
 import defaultProfileImage from '../assets/default-profile.jpg'
 
@@ -37,6 +37,9 @@ const ProfilePage = () => {
   const [saveError, setSaveError] = useState(null)
   const isOwnProfile = !userId || (user && userId === user.id)
   const [requests, setRequests] = useState([])
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
+  const [deletingServiceId, setDeletingServiceId] = useState(null)
 
   const getImageUrl = (path) => {
     if (!path) return '/placeholder.svg';
@@ -186,8 +189,10 @@ const ProfilePage = () => {
       const tempImageUrl = URL.createObjectURL(file)
       
       // Actualizăm temporar imaginea de profil pentru feedback vizual imediat
-      const tempUser = { ...user, profileImage: tempImageUrl }
-      loginUser(tempUser)
+      // Dar nu o salvăm în localStorage până nu primim confirmarea de la server
+      const tempUser = { ...user }
+      tempUser.profileImage = tempImageUrl
+      // Nu apelăm loginUser aici pentru a nu salva URL-ul temporar în localStorage
       
       const formData = new FormData()
       formData.append('image', file)
@@ -209,34 +214,25 @@ const ProfilePage = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.text()
+        const errorData = await response.json()
         console.error('Server error:', errorData)
-        throw new Error(errorData || 'Încărcarea imaginii a eșuat')
+        throw new Error(errorData.message || 'Încărcarea imaginii a eșuat')
       }
 
       const data = await response.json()
       
-      if (!data.user || !data.imageUrl) {
-        throw new Error('Răspunsul serverului nu conține datele necesare')
-      }
-
-      // Update user context with new user data
-      const updatedUser = {
-        ...user,
-        profileImage: data.imageUrl
-      }
+      // Actualizăm utilizatorul cu noua imagine de profil primită de la server
+      const updatedUser = { ...user, profileImage: data.user.profileImage }
       loginUser(updatedUser)
-
-      // Eliberăm URL-ul temporar
+      
+      // Revocăm URL-ul temporar pentru a elibera memoria
       URL.revokeObjectURL(tempImageUrl)
+      
+      // Afișăm un mesaj de succes
+      alert('Imaginea de profil a fost actualizată cu succes!')
     } catch (error) {
       console.error('Error uploading image:', error)
-      alert('Încărcarea imaginii a eșuat. Te rugăm să încerci din nou.')
-      
-      // Revert to original user data if there was an error
-      if (user) {
-        loginUser(user)
-      }
+      alert(`Eroare la încărcarea imaginii: ${error.message || 'Te rugăm să încerci din nou.'}`)
     } finally {
       setIsUploading(false)
     }
@@ -283,6 +279,39 @@ const ProfilePage = () => {
       setIsSaving(false)
     }
   }
+
+  const handleDeleteService = async (serviceId) => {
+    if (!window.confirm('Ești sigur că vrei să ștergi acest serviciu? Această acțiune nu poate fi anulată.')) {
+      return;
+    }
+    
+    try {
+      setIsDeleting(true);
+      setDeletingServiceId(serviceId);
+      setDeleteError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Nu ești autentificat');
+      }
+      
+      await deleteService(serviceId, token);
+      
+      // Actualizăm lista de servicii după ștergere
+      setServices(services.filter(service => service.id !== serviceId));
+      
+      // Afișăm un mesaj de succes temporar
+      alert('Serviciul a fost șters cu succes!');
+      
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      setDeleteError('Nu am putut șterge serviciul. Te rugăm să încerci din nou.');
+      alert('A apărut o eroare la ștergerea serviciului. Te rugăm să încerci din nou.');
+    } finally {
+      setIsDeleting(false);
+      setDeletingServiceId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -514,9 +543,25 @@ const ProfilePage = () => {
                           <FaEye /> Vezi detalii
                         </Link>
                         {isOwnProfile && (
-                          <Link to={`/edit-service/${service.id}`} className="edit-button">
-                            <Edit size={16} />
-                          </Link>
+                          <>
+                            <Link to={`/edit-service/${service.id}`} className="edit-button">
+                              <Edit size={16} />
+                            </Link>
+                            <button 
+                              className="delete-button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteService(service.id);
+                              }}
+                              disabled={isDeleting && deletingServiceId === service.id}
+                            >
+                              {isDeleting && deletingServiceId === service.id ? (
+                                <Loader size={16} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>

@@ -732,30 +732,32 @@
 .service-actions {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
   gap: 10px;
-}
-
-.view-button,
-.edit-button {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: center;
-  transition: all 0.2s;
 }
 
 .view-button {
   background-color: var(--primary);
   color: white;
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s;
+  justify-content: center;
 }
 
 .view-button:hover {
   background-color: var(--primary-dark);
 }
 
-.edit-button {
+.edit-button, .delete-button {
   background-color: var(--light-gray);
   color: var(--text-primary);
   width: 36px;
@@ -764,10 +766,40 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
 }
 
 .edit-button:hover {
   background-color: var(--gray);
+  color: var(--primary);
+}
+
+.delete-button:hover {
+  background-color: var(--gray);
+  color: #e53935;
+}
+
+.delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .section-header {

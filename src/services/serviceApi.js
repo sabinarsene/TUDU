@@ -70,11 +70,32 @@ export const createService = async (serviceData, token) => {
       body: serviceData
     });
     
-    if (!response.ok) {
-      throw new Error(`Error creating service: ${response.statusText}`);
+    // Încercăm să obținem răspunsul JSON
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (jsonError) {
+      console.error('Error parsing response:', jsonError);
+      // Dacă nu putem parsa JSON, folosim textul răspunsului
+      const textResponse = await response.text();
+      if (!response.ok) {
+        throw new Error(textResponse || `Error creating service: ${response.statusText}`);
+      }
+      throw new Error('Răspunsul serverului nu este în format valid');
     }
     
-    return await response.json();
+    if (!response.ok) {
+      console.error('Server returned error:', responseData);
+      
+      // Verificăm dacă eroarea este legată de Supabase storage
+      if (responseData.error && responseData.error.includes('storage')) {
+        throw new Error('Eroare la încărcarea imaginii. Serviciul Supabase Storage nu este disponibil.');
+      }
+      
+      throw new Error(responseData.message || `Error creating service: ${response.statusText}`);
+    }
+    
+    return responseData;
   } catch (error) {
     console.error('Error creating service:', error);
     throw error;

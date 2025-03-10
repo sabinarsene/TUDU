@@ -190,6 +190,7 @@ const PostRequestPage = () => {
     }
 
     setIsSubmitting(true)
+    setErrors({ ...errors, submit: null })
 
     try {
       // Get token from localStorage
@@ -201,81 +202,67 @@ const PostRequestPage = () => {
 
       // Create FormData object for the API call
       const requestFormData = new FormData()
+      requestFormData.append('title', formData.title)
+      requestFormData.append('category', formData.category)
+      requestFormData.append('description', formData.description)
+      requestFormData.append('budget', formData.budget)
+      requestFormData.append('currency', formData.currency)
+      requestFormData.append('location', formData.location)
       
-      // Adăugăm toate câmpurile necesare
-      // Convertim valorile la string pentru a evita probleme cu tipurile de date
-      // Verificăm că valorile nu sunt undefined sau null
-      const title = String(formData.title || '').trim()
-      const category = String(formData.category || '').trim()
-      const description = String(formData.description || '').trim()
-      const budget = String(formData.budget || '').trim()
-      const currency = String(formData.currency || 'RON').trim()
-      const location = String(formData.location || '').trim()
-      const deadline = formData.deadline ? formData.deadline.toISOString() : ''
-      
-      // Verificăm că avem toate câmpurile obligatorii
-      if (!title) {
-        setErrors({ ...errors, title: "Titlul este obligatoriu" })
-        setIsSubmitting(false)
-        return
+      if (formData.deadline) {
+        requestFormData.append('deadline', formData.deadline.toISOString())
       }
       
-      if (!category) {
-        setErrors({ ...errors, category: "Categoria este obligatorie" })
-        setIsSubmitting(false)
-        return
-      }
+      requestFormData.append('contactPreference', formData.contactPreference)
       
-      if (!description) {
-        setErrors({ ...errors, description: "Descrierea este obligatorie" })
-        setIsSubmitting(false)
-        return
-      }
-      
-      if (!location) {
-        setErrors({ ...errors, location: "Locația este obligatorie" })
-        setIsSubmitting(false)
-        return
-      }
-      
-      // Adăugăm câmpurile la FormData
-      requestFormData.append('title', title)
-      requestFormData.append('category', category)
-      requestFormData.append('description', description)
-      requestFormData.append('budget', budget)
-      requestFormData.append('currency', currency)
-      requestFormData.append('location', location)
-      requestFormData.append('deadline', deadline)
-      
-      // Adăugăm preferința de contact dacă există
-      if (formData.contactPreference) {
-        requestFormData.append('contactPreference', String(formData.contactPreference).trim())
-      }
-      
-      // Append images - verificăm că fiecare imagine este un obiect File valid
-      if (formData.images && formData.images.length > 0) {
-        formData.images.forEach((image, index) => {
-          if (image instanceof File) {
-            requestFormData.append('images', image)
-          } else {
-            console.warn(`Skipping invalid image at index ${index}`)
-          }
-        })
-      }
+      // Nu mai încărcăm imaginile în această versiune
+      // Vom implementa încărcarea imaginilor după ce rezolvăm problema cu Supabase
 
       // Afișăm datele trimise pentru debugging
       console.log("Sending request data:")
-      for (let pair of requestFormData.entries()) {
-        console.log(pair[0] + ': ' + (pair[0] === 'images' ? 'File object' : pair[1]))
+      console.log("title:", formData.title)
+      console.log("category:", formData.category)
+      console.log("description:", formData.description)
+      console.log("budget:", formData.budget)
+      console.log("currency:", formData.currency)
+      console.log("location:", formData.location)
+      console.log("deadline:", formData.deadline ? formData.deadline.toISOString() : null)
+      console.log("contactPreference:", formData.contactPreference)
+
+      try {
+        // Call the API to create the request
+        const response = await createRequest(requestFormData, token)
+        
+        console.log("Request created:", response)
+  
+        // Redirect to success page
+        navigate("/success?type=request")
+      } catch (apiError) {
+        console.error("API error posting request:", apiError)
+        
+        // Verificăm dacă eroarea este legată de un câmp specific
+        if (apiError.field) {
+          setErrors({
+            ...errors,
+            [apiError.field]: apiError.message,
+            submit: `Eroare: Verifică câmpul ${apiError.field}`
+          })
+          
+          // Scroll to the specific field error
+          const fieldError = document.querySelector(`[name="${apiError.field}"]`)
+          if (fieldError) {
+            fieldError.scrollIntoView({ behavior: "smooth", block: "center" })
+          }
+        } else {
+          setErrors({
+            ...errors,
+            submit: `Eroare: ${apiError.message || 'A apărut o eroare la crearea cererii. Te rugăm să încerci din nou.'}`
+          })
+          
+          // Scroll to the top to show the error
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       }
-
-      // Call the API to create the request
-      const response = await createRequest(requestFormData, token)
-      
-      console.log("Request created:", response)
-
-      // Redirect to success page
-      navigate("/success?type=request")
     } catch (error) {
       console.error("Error posting request:", error)
       
@@ -291,6 +278,9 @@ const PostRequestPage = () => {
           submit: "A apărut o eroare. Te rugăm să încerci din nou.",
         })
       }
+      
+      // Scroll to the top to show the error
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setIsSubmitting(false)
     }

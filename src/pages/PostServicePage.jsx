@@ -168,6 +168,7 @@ const PostServicePage = () => {
     }
 
     setIsSubmitting(true)
+    setErrors({ ...errors, submit: null })
 
     try {
       // Get token from localStorage
@@ -186,26 +187,67 @@ const PostServicePage = () => {
       serviceFormData.append('location', formData.location)
       serviceFormData.append('description', formData.description)
       
-      // Append images
+      // Append image - only the first one since backend only supports one image
       if (formData.images && formData.images.length > 0) {
-        formData.images.forEach((image, index) => {
-          serviceFormData.append('images', image)
-        })
+        serviceFormData.append('image', formData.images[0])
+        console.log("Appending image:", formData.images[0].name)
+      } else {
+        console.log("No image to append")
       }
 
-      // Call the API to create the service
-      const response = await createService(serviceFormData, token)
-      
-      console.log("Service created:", response)
+      console.log("Submitting service with data:", {
+        title: formData.title,
+        category: formData.category,
+        price: formData.price,
+        hasImage: formData.images && formData.images.length > 0
+      })
 
-      // Redirect to home page or service details page
-      navigate("/success?type=service")
+      try {
+        // Call the API to create the service
+        const response = await createService(serviceFormData, token)
+        
+        console.log("Service created:", response)
+  
+        // Redirect to success page
+        navigate("/success?type=service")
+      } catch (apiError) {
+        console.error("API error posting service:", apiError)
+        
+        // Verificăm dacă eroarea este legată de încărcarea imaginii
+        if (apiError.message && apiError.message.includes('image')) {
+          setErrors({
+            ...errors,
+            images: "Eroare la încărcarea imaginii. Serviciul nu a putut fi creat.",
+            submit: `Eroare: ${apiError.message}`
+          })
+        } else {
+          setErrors({
+            ...errors,
+            submit: `Eroare: ${apiError.message || 'A apărut o eroare la crearea serviciului. Te rugăm să încerci din nou.'}`
+          })
+        }
+        
+        // Scroll to the top to show the error
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     } catch (error) {
       console.error("Error posting service:", error)
-      setErrors({
-        ...errors,
-        submit: "A apărut o eroare. Te rugăm să încerci din nou.",
-      })
+      
+      // Afișăm un mesaj de eroare mai specific dacă este disponibil
+      if (error.message) {
+        setErrors({
+          ...errors,
+          submit: `Eroare: ${error.message}`,
+        })
+      } else {
+        setErrors({
+          ...errors,
+          submit: "A apărut o eroare. Te rugăm să încerci din nou.",
+        })
+      }
+      
+      // Scroll to the top to show the error
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setIsSubmitting(false)
     }

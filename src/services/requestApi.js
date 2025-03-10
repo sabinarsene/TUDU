@@ -15,14 +15,28 @@ export const fetchRequests = async () => {
     
     const response = await fetch(fullUrl);
     
-    if (!response.ok) {
-      throw new Error(`Error fetching requests: ${response.statusText}`);
+    // Încearcă să obții răspunsul JSON, chiar dacă statusul nu este ok
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (jsonError) {
+      console.error('Error parsing JSON response:', jsonError);
+      if (!response.ok) {
+        throw new Error(`Error fetching requests: ${response.statusText}`);
+      }
+      throw jsonError;
     }
     
-    return await response.json();
+    if (!response.ok) {
+      console.error('Server returned error:', responseData);
+      throw new Error(responseData.message || `Error fetching requests: ${response.statusText}`);
+    }
+    
+    return responseData;
   } catch (error) {
     console.error('Error fetching requests:', error);
-    throw error;
+    // Returnează un array gol în loc să arunci eroarea, pentru a evita blocarea UI-ului
+    return [];
   }
 };
 
@@ -81,29 +95,55 @@ export const createRequest = async (requestData, token) => {
       throw new Error('Locația este obligatorie');
     }
 
+    console.log('Sending request to server with data:', {
+      title,
+      category,
+      description,
+      location,
+      budget: requestData.get('budget'),
+      deadline: requestData.get('deadline')
+    });
+
     // Facem request-ul către server
     const response = await fetch(`${API_URL}/requests`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
-      body: requestData
+      body: JSON.stringify({
+        title,
+        category,
+        description,
+        location,
+        budget: requestData.get('budget'),
+        currency: requestData.get('currency') || 'RON',
+        deadline: requestData.get('deadline')
+      })
     });
+
+    // Încercăm să obținem răspunsul JSON
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (jsonError) {
+      console.error('Error parsing response:', jsonError);
+      // Dacă nu putem parsa JSON, folosim textul răspunsului
+      const textResponse = await response.text();
+      if (!response.ok) {
+        throw new Error(textResponse || `Error: ${response.status} ${response.statusText}`);
+      }
+      throw new Error('Răspunsul serverului nu este în format valid');
+    }
 
     // Verificăm răspunsul
     if (!response.ok) {
-      let errorMessage;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || 'A apărut o eroare la crearea cererii';
-      } catch (e) {
-        errorMessage = await response.text() || 'A apărut o eroare la crearea cererii';
-      }
-      throw new Error(errorMessage);
+      console.error('Server returned error:', responseData);
+      throw new Error(responseData.message || responseData.error || 'A apărut o eroare la crearea cererii');
     }
 
     // Returnăm datele
-    return await response.json();
+    return responseData;
   } catch (error) {
     console.error('Error creating request:', error);
     throw error;
