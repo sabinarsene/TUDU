@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom"
 import "./SignUpForm.css"
 import { Eye } from "lucide-react"
 import { register } from "../services/authService"
+import { useAuth } from "../contexts/AuthContext"
 
 const SignUpForm = () => {
   const [firstName, setFirstName] = useState("")
@@ -19,6 +20,7 @@ const SignUpForm = () => {
   const [isLoading, setIsLoading] = useState(false)
   
   const navigate = useNavigate()
+  const { loginUser } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -37,13 +39,18 @@ const SignUpForm = () => {
     setIsLoading(true)
     
     try {
-      await register({
+      const response = await register({
         firstName,
         lastName,
         email,
         password
       })
-      navigate("/") // Redirecționare către pagina principală după înregistrare
+      
+      // Update the user state in AuthContext
+      loginUser(response.user)
+      
+      // Redirect to home page
+      navigate("/")
     } catch (error) {
       setError(error.message || "Registration failed. Please try again.")
     } finally {

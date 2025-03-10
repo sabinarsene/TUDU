@@ -1,176 +1,45 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Filter, MapPin, Clock, MessageCircle, Plus, Check, ChevronDown } from "lucide-react"
+import { Filter, MapPin, Clock, MessageCircle, Plus, Check, ChevronDown, Loader, AlertTriangle, Star } from "lucide-react"
 import "./RequestsPage.css"
 import Header from "../components/Header"
+import { fetchRequests } from "../services/requestApi"
 
-// Sample service requests data
-const SAMPLE_REQUESTS = [
-  {
-    id: 1,
-    title: "Caut instalator pentru reparație urgentă",
-    category: "Instalații",
-    budget: {
-      min: 100,
-      max: 200,
-      currency: "RON",
-    },
-    location: "București, Sector 3",
-    deadline: "În 2 zile",
-    postedAt: "Acum 3 ore",
-    description: "Am o țeavă spartă în baie care trebuie reparată urgent. Disponibilitate imediată necesară.",
-    user: {
-      id: 101,
-      name: "Andreea M.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.7,
-      reviewCount: 8,
-    },
-  },
-  {
-    id: 2,
-    title: "Curățenie generală apartament 3 camere",
-    category: "Curățenie",
-    budget: {
-      min: 200,
-      max: 300,
-      currency: "RON",
-    },
-    location: "Cluj-Napoca",
-    deadline: "Săptămâna viitoare",
-    postedAt: "Acum 1 zi",
-    description: "Caut serviciu de curățenie profesională pentru un apartament de 3 camere. Preferabil cu produse eco.",
-    user: {
-      id: 102,
-      name: "Mihai D.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.9,
-      reviewCount: 12,
-    },
-  },
-  {
-    id: 3,
-    title: "Montaj mobilă IKEA",
-    category: "Mobilă",
-    budget: {
-      min: 150,
-      max: 250,
-      currency: "RON",
-    },
-    location: "Timișoara",
-    deadline: "În weekend",
-    postedAt: "Acum 2 zile",
-    description:
-      "Am nevoie de ajutor pentru montarea unui dulap și a unei canapele de la IKEA. Persoana trebuie să aibă scule proprii.",
-    user: {
-      id: 103,
-      name: "Elena P.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.5,
-      reviewCount: 5,
-    },
-  },
-  {
-    id: 4,
-    title: "Profesor de matematică pentru elev clasa a 8-a",
-    category: "Educație",
-    budget: {
-      min: 70,
-      max: 100,
-      currency: "RON/oră",
-    },
-    location: "Online",
-    deadline: "Permanent",
-    postedAt: "Acum 5 zile",
-    description:
-      "Caut profesor pentru meditații la matematică pentru pregătirea examenului de capacitate. 2 ședințe pe săptămână.",
-    user: {
-      id: 104,
-      name: "Cristian V.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 5.0,
-      reviewCount: 15,
-    },
-  },
-  {
-    id: 5,
-    title: "Transport mobilă la mutare",
-    category: "Transport",
-    budget: {
-      min: 300,
-      max: 500,
-      currency: "RON",
-    },
-    location: "Brașov",
-    deadline: "15 Iulie",
-    postedAt: "Acum 3 zile",
-    description:
-      "Am nevoie de o dubă și ajutor pentru mutarea mobilierului dintr-un apartament cu 2 camere la o distanță de aproximativ 5 km.",
-    user: {
-      id: 105,
-      name: "Alexandru T.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.6,
-      reviewCount: 9,
-    },
-  },
-  {
-    id: 6,
-    title: "Reparație frigider Samsung",
-    category: "Electrocasnice",
-    budget: {
-      min: 100,
-      max: 300,
-      currency: "RON",
-    },
-    location: "Constanța",
-    deadline: "Cât mai curând",
-    postedAt: "Acum 12 ore",
-    description: "Frigiderul nu mai răcește corespunzător. Model Samsung RB31FDRNDSA. Caut tehnician cu experiență.",
-    user: {
-      id: 106,
-      name: "Maria N.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.8,
-      reviewCount: 11,
-    },
-  },
-]
+// Categoriile principale care vor fi afișate mereu
+const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Transport", "Educație"]
 
-// Categorii pentru filtrare
-const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Educație", "Transport"]
-
+// Categorii suplimentare care vor fi afișate doar când se apasă pe "Altele"
 const OTHER_CATEGORIES = [
   "Electrocasnice",
   "Grădinărit",
   "IT & Tech",
-  "Design",
-  "Construcții",
-  "Sănătate",
   "Meditații",
+  "Construcții",
+  "Design",
+  "Sănătate",
   "Frumusețe",
+  "Animale",
   "Auto",
-  "Juridic",
-  "Contabilitate",
-  "Alte servicii",
+  "Evenimente",
 ]
 
-// Opțiuni pentru filtrare după buget
+// Opțiuni pentru filtrarea după buget
 const BUDGET_RANGES = [
   { label: "Sub 100 RON", min: 0, max: 100 },
-  { label: "100 - 300 RON", min: 100, max: 300 },
-  { label: "300 - 500 RON", min: 300, max: 500 },
-  { label: "Peste 500 RON", min: 500, max: Number.POSITIVE_INFINITY },
+  { label: "100-300 RON", min: 100, max: 300 },
+  { label: "300-500 RON", min: 300, max: 500 },
+  { label: "500-1000 RON", min: 500, max: 1000 },
+  { label: "Peste 1000 RON", min: 1000, max: 100000 },
 ]
 
-// Opțiuni pentru filtrare după termen limită
-const DEADLINES = [
-  { label: "Urgent (24h)", value: "urgent" },
-  { label: "Această săptămână", value: "week" },
-  { label: "Această lună", value: "month" },
-  { label: "Flexibil", value: "flexible" },
+// Opțiuni pentru filtrarea după termen
+const DEADLINE_OPTIONS = [
+  { label: "Astăzi", value: "Astăzi" },
+  { label: "Mâine", value: "Mâine" },
+  { label: "Această săptămână", value: "În" },
+  { label: "Fără termen", value: "Fără termen" },
 ]
 
 const RequestsPage = () => {
@@ -182,52 +51,77 @@ const RequestsPage = () => {
     deadline: null,
     location: "",
   })
+  // State pentru cereri
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Filtrarea anunțurilor în funcție de criteriile selectate
-  const filteredRequests = SAMPLE_REQUESTS.filter((request) => {
-    // Filtrare după categorie
+  // Funcție pentru a obține URL-ul complet al imaginii
+  const getImageUrl = (path) => {
+    if (!path) return '/placeholder.svg';
+    
+    // Verificăm dacă este un URL absolut
+    if (path.startsWith('http')) {
+      return path;
+    }
+    
+    // Verificăm dacă path începe cu '/'
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+    
+    // Altfel, construim URL-ul complet
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    return `${API_URL}${path}`;
+  };
+
+  // Funcție pentru a gestiona erorile de încărcare a imaginilor
+  const handleImageError = (e) => {
+    e.target.src = '/placeholder.svg';
+  };
+
+  // Fetch requests from API when component mounts
+  useEffect(() => {
+    const getRequests = async () => {
+      try {
+        setLoading(true)
+        const data = await fetchRequests()
+        setRequests(data)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching requests:", err)
+        setError("Nu am putut încărca cererile. Vă rugăm încercați din nou mai târziu.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    getRequests()
+  }, [])
+
+  // Filter requests based on all criteria
+  const filteredRequests = requests.filter((request) => {
+    // Category filter
     if (selectedCategory !== "Toate" && request.category !== selectedCategory) {
       return false
     }
 
-    // Filtrare după buget
+    // Budget range filter
     if (filters.budgetRange) {
-      const requestMaxBudget = request.budget.max
-      if (requestMaxBudget < filters.budgetRange.min || request.budget.min > filters.budgetRange.max) {
+      const requestBudget = parseFloat(request.budget)
+      if (requestBudget < filters.budgetRange.min || requestBudget > filters.budgetRange.max) {
         return false
       }
     }
 
-    // Filtrare după locație
-    if (filters.location && !request.location.toLowerCase().includes(filters.location.toLowerCase())) {
+    // Deadline filter
+    if (filters.deadline && !request.deadline.includes(filters.deadline.value)) {
       return false
     }
 
-    // Filtrare după termen limită (simplificată pentru demo)
-    if (filters.deadline) {
-      // Implementare simplificată - în realitate ar trebui o logică mai complexă
-      if (
-        filters.deadline.value === "urgent" &&
-        !request.deadline.includes("urgent") &&
-        !request.deadline.includes("curând") &&
-        !request.deadline.includes("zile")
-      ) {
-        return false
-      }
-      if (
-        filters.deadline.value === "week" &&
-        !request.deadline.includes("săptămână") &&
-        !request.deadline.includes("weekend")
-      ) {
-        return false
-      }
-      if (
-        filters.deadline.value === "month" &&
-        !request.deadline.includes("lună") &&
-        !request.deadline.includes("Iulie")
-      ) {
-        return false
-      }
+    // Location filter
+    if (filters.location && !request.location.toLowerCase().includes(filters.location.toLowerCase())) {
+      return false
     }
 
     return true
@@ -252,11 +146,9 @@ const RequestsPage = () => {
     <div className="requests-page">
       <Header />
 
-      <div className="page-title-container">
-        <h1 className="page-title">Cereri de servicii</h1>
-        <p className="page-description">
-          Anunțuri postate de persoane care caută servicii. Răspunde pentru a oferi serviciile tale.
-        </p>
+      <div className="page-header">
+        <h1>Cereri de servicii</h1>
+        <p>Găsește cereri de servicii și oferă-ți expertiza</p>
       </div>
 
       <div className="category-filters">
@@ -287,7 +179,7 @@ const RequestsPage = () => {
         </button>
       </div>
 
-      {/* Categorii suplimentare */}
+      {/* Categorii suplimentare - afișate doar când showOtherCategories este true */}
       {showOtherCategories && (
         <div className="other-categories">
           {OTHER_CATEGORIES.map((category) => (
@@ -304,7 +196,7 @@ const RequestsPage = () => {
         </div>
       )}
 
-      {/* Panoul de filtre */}
+      {/* Filter panel */}
       {isFilterOpen && (
         <div className="filter-panel">
           <div className="filter-panel-header">
@@ -333,14 +225,14 @@ const RequestsPage = () => {
           <div className="filter-section">
             <h4>Termen limită</h4>
             <div className="filter-options">
-              {DEADLINES.map((deadline) => (
+              {DEADLINE_OPTIONS.map((option) => (
                 <button
-                  key={deadline.value}
-                  className={`filter-option ${filters.deadline === deadline ? "active" : ""}`}
-                  onClick={() => handleFilterChange("deadline", filters.deadline === deadline ? null : deadline)}
+                  key={option.label}
+                  className={`filter-option ${filters.deadline === option ? "active" : ""}`}
+                  onClick={() => handleFilterChange("deadline", filters.deadline === option ? null : option)}
                 >
-                  {filters.deadline === deadline && <Check size={16} />}
-                  {deadline.label}
+                  {filters.deadline === option && <Check size={16} />}
+                  {option.label}
                 </button>
               ))}
             </div>
@@ -360,7 +252,20 @@ const RequestsPage = () => {
       )}
 
       <main className="requests-grid">
-        {filteredRequests.length === 0 ? (
+        {loading ? (
+          <div className="loading-container">
+            <Loader size={48} className="spinner" />
+            <p>Se încarcă cererile...</p>
+          </div>
+        ) : error ? (
+          <div className="error-container">
+            <AlertTriangle size={48} />
+            <p>{error}</p>
+            <button className="retry-button" onClick={() => window.location.reload()}>
+              Încearcă din nou
+            </button>
+          </div>
+        ) : filteredRequests.length === 0 ? (
           <div className="no-results">
             <p>Nu am găsit cereri care să corespundă criteriilor selectate.</p>
             <button
@@ -375,71 +280,59 @@ const RequestsPage = () => {
           </div>
         ) : (
           filteredRequests.map((request) => (
-            <div key={request.id} className="request-card">
+            <Link to={`/request/${request.id}`} key={request.id} className="request-card">
               <div className="request-header">
-                <span className="request-category">{request.category}</span>
-                <span className="request-time">{request.postedAt}</span>
+                <div className="request-category">{request.category}</div>
+                <div className="request-time">
+                  <Clock size={14} />
+                  <span>{request.postedAt}</span>
+                </div>
               </div>
 
-              <h3 className="request-title">
-                <Link to={`/request/${request.id}`}>{request.title}</Link>
-              </h3>
+              <h3 className="request-title">{request.title}</h3>
 
-              <div className="request-budget">
-                <span className="budget-label">Buget:</span>
-                <span className="budget-amount">
-                  {request.budget.min} - {request.budget.max} {request.budget.currency}
-                </span>
-              </div>
-
-              <div className="request-meta">
-                <div className="meta-item">
-                  <MapPin size={16} />
-                  <span>{request.location}</span>
-                </div>
-                <div className="meta-item">
-                  <Clock size={16} />
-                  <span>{request.deadline}</span>
-                </div>
+              <div className="request-location">
+                <MapPin size={16} />
+                <span>{request.location}</span>
               </div>
 
               <p className="request-description">{request.description}</p>
 
-              <div className="request-user">
-                <img src={request.user.image || "/placeholder.svg"} alt={request.user.name} className="user-avatar" />
-                <div className="user-info">
-                  <span className="user-name">{request.user.name}</span>
-                  <div className="user-rating">
-                    <span className="rating-value">{request.user.rating}</span>
-                    <div className="rating-stars">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`star ${i < Math.floor(request.user.rating) ? "filled" : ""}`}>
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                    <span className="review-count">({request.user.reviewCount})</span>
-                  </div>
+              <div className="request-footer">
+                <div className="request-budget">
+                  <span className="budget-amount">
+                    {request.budget} {request.currency}
+                  </span>
+                </div>
+
+                <div className="request-deadline">
+                  <span>Termen: {request.deadline}</span>
                 </div>
               </div>
 
-              <div className="request-actions">
-                <Link to={`/messages/new/${request.user.id}?requestId=${request.id}`} className="action-button primary">
-                  <MessageCircle size={16} />
-                  <span>Contactează</span>
-                </Link>
-                <Link to={`/request/${request.id}`} className="action-button secondary">
-                  Vezi detalii
-                </Link>
+              <div className="request-user">
+                <img 
+                  src={getImageUrl(request.user.image)} 
+                  alt={request.user.name}
+                  onError={handleImageError}
+                  className="user-avatar"
+                />
+                <span className="user-name">{request.user.name}</span>
+                {request.user.rating && (
+                  <div className="user-rating">
+                    <Star size={14} fill="#FFD700" />
+                    <span>{request.user.rating.toFixed(1)}</span>
+                    <span className="review-count">({request.user.reviewCount})</span>
+                  </div>
+                )}
               </div>
-            </div>
+            </Link>
           ))
         )}
       </main>
 
       <Link to="/post-request" className="post-request-button">
-        <Plus size={20} />
-        <span>Postează o cerere</span>
+        <Plus size={24} />
       </Link>
     </div>
   )

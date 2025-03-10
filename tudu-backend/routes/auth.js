@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -88,24 +89,8 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Middleware pentru verificarea autentificării
-const authMiddleware = (req, res, next) => {
-  const token = req.header('x-auth-token');
-  if (!token) {
-    return res.status(401).json({ message: 'No token, authorization denied' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Token is not valid' });
-  }
-};
-
 // Rută protejată pentru a obține profilul utilizatorului
-router.get('/profile', authMiddleware, async (req, res) => {
+router.get('/profile', auth, async (req, res) => {
   try {
     const user = await db.query(
       'SELECT id, first_name, last_name, email, profile_image FROM users WHERE id = $1',

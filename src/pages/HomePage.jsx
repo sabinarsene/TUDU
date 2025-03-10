@@ -1,130 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Filter, MapPin, Star, Plus, Check, ChevronDown } from "lucide-react"
+import { Filter, MapPin, Star, Plus, Check, ChevronDown, AlertTriangle } from "lucide-react"
 import "./HomePage.css"
 import Header from "../components/Header"
+import { fetchServices } from "../services/serviceApi"
+import { Loader } from "lucide-react"
 
-// Actualizăm SAMPLE_SERVICES pentru a folosi calea corectă spre imaginile de profil
-const SAMPLE_SERVICES = [
-  {
-    id: 1,
-    title: "Reparații instalații sanitare",
-    category: "Instalații",
-    price: 150,
-    currency: "RON",
-    location: "București",
-    rating: 4.8,
-    reviews: 24,
-    provider: {
-      name: "Alexandru M.",
-      image: "./profile-photos/alex.jpg", // Calea actualizată
-    },
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 2,
-    title: "Curățenie apartament",
-    category: "Curățenie",
-    price: 100,
-    currency: "RON",
-    location: "Cluj-Napoca",
-    rating: 4.6,
-    reviews: 18,
-    provider: {
-      name: "Denis V.",
-      image: "./profile-photos/denis.jpg", // Calea actualizată
-    },
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 3,
-    title: "Montaj mobilă",
-    category: "Mobilă",
-    price: 200,
-    currency: "RON",
-    location: "Timișoara",
-    rating: 4.9,
-    reviews: 32,
-    provider: {
-      name: "Florin P.",
-      image: "./profile-photos/florin.jpg", // Calea actualizată
-    },
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 4,
-    title: "Lecții de pian",
-    category: "Educație",
-    price: 80,
-    currency: "RON",
-    location: "Iași",
-    rating: 5.0,
-    reviews: 15,
-    provider: {
-      name: "Stefan C.",
-      image: "./profile-photos/stefan.jpg", // Calea actualizată
-    },
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 5,
-    title: "Transport marfă",
-    category: "Transport",
-    price: 250,
-    currency: "RON",
-    location: "Brașov",
-    rating: 4.7,
-    reviews: 41,
-    provider: {
-      name: "Vlad T.",
-      image: "./profile-photos/vlad.jpg", // Calea actualizată
-    },
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 6,
-    title: "Reparații electrocasnice",
-    category: "Electrocasnice",
-    price: 120,
-    currency: "RON",
-    location: "Constanța",
-    rating: 4.5,
-    reviews: 28,
-    provider: {
-      name: "Alexandru M.",
-      image: "./profile-photos/alex.jpg", // Calea actualizată
-    },
-    image: "/placeholder.svg?height=200&width=300",
-  },
-]
+// Categoriile principale care vor fi afișate mereu
+const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Transport", "Educație"]
 
-// Modifică array-ul CATEGORIES pentru a separa categoriile principale de cele secundare
-const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Educație", "Transport"]
-
+// Categorii suplimentare care vor fi afișate doar când se apasă pe "Altele"
 const OTHER_CATEGORIES = [
   "Electrocasnice",
   "Grădinărit",
   "IT & Tech",
-  "Design",
-  "Construcții",
-  "Sănătate",
   "Meditații",
+  "Construcții",
+  "Design",
+  "Sănătate",
   "Frumusețe",
+  "Animale",
   "Auto",
-  "Juridic",
-  "Contabilitate",
-  "Alte servicii",
+  "Evenimente",
 ]
 
+// Opțiuni pentru filtrarea după preț
 const PRICE_RANGES = [
-  { label: "Sub 100 RON", min: 0, max: 100 },
-  { label: "100 - 200 RON", min: 100, max: 200 },
-  { label: "200 - 500 RON", min: 200, max: 500 },
-  { label: "Peste 500 RON", min: 500, max: Number.POSITIVE_INFINITY },
+  { label: "Sub 50 RON", min: 0, max: 50 },
+  { label: "50-100 RON", min: 50, max: 100 },
+  { label: "100-200 RON", min: 100, max: 200 },
+  { label: "200-500 RON", min: 200, max: 500 },
+  { label: "Peste 500 RON", min: 500, max: 10000 },
 ]
 
+// Opțiuni pentru filtrarea după rating
 const RATINGS = [
   { label: "4.5+ ⭐", value: 4.5 },
   { label: "4.0+ ⭐", value: 4.0 },
@@ -141,10 +52,33 @@ const HomePage = () => {
     minRating: null,
     location: "",
   })
+  // State pentru servicii
+  const [services, setServices] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch services from API when component mounts
+  useEffect(() => {
+    const getServices = async () => {
+      try {
+        setLoading(true)
+        const data = await fetchServices()
+        setServices(data)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching services:", err)
+        setError("Nu am putut încărca serviciile. Vă rugăm încercați din nou mai târziu.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    getServices()
+  }, [])
 
   // Modifică funcția de filtrare pentru a include și categoriile suplimentare
   // Filter services based on all criteria
-  const filteredServices = SAMPLE_SERVICES.filter((service) => {
+  const filteredServices = services.filter((service) => {
     // Category filter
     if (selectedCategory !== "Toate" && service.category !== selectedCategory) {
       return false
@@ -184,6 +118,25 @@ const HomePage = () => {
       location: "",
     })
   }
+
+  // Funcție pentru a obține URL-ul complet al imaginii
+  const getImageUrl = (path) => {
+    if (!path) return '/placeholder.svg';
+    
+    // Verificăm dacă este un URL absolut
+    if (path.startsWith('http')) {
+      return path;
+    }
+    
+    // Altfel, construim URL-ul complet
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    return `${API_URL}${path}`;
+  };
+
+  // Funcție pentru a gestiona erorile de încărcare a imaginilor
+  const handleImageError = (e) => {
+    e.target.src = '/placeholder.svg';
+  };
 
   return (
     <div className="home-page">
@@ -295,7 +248,20 @@ const HomePage = () => {
       )}
 
       <main className="services-grid">
-        {filteredServices.length === 0 ? (
+        {loading ? (
+          <div className="loading-container">
+            <Loader size={48} className="spinner" />
+            <p>Se încarcă serviciile...</p>
+          </div>
+        ) : error ? (
+          <div className="error-container">
+            <AlertTriangle size={48} />
+            <p>{error}</p>
+            <button className="retry-button" onClick={() => window.location.reload()}>
+              Încearcă din nou
+            </button>
+          </div>
+        ) : filteredServices.length === 0 ? (
           <div className="no-results">
             <p>Nu am găsit servicii care să corespundă criteriilor selectate.</p>
             <button
@@ -312,7 +278,12 @@ const HomePage = () => {
           filteredServices.map((service) => (
             <Link to={`/service/${service.id}`} key={service.id} className="service-card">
               <div className="service-image-container">
-                <img src={service.image || "/placeholder.svg"} alt={service.title} className="service-image" />
+                <img 
+                  src={getImageUrl(service.image_url)} 
+                  alt={service.title} 
+                  className="service-image"
+                  onError={handleImageError}
+                />
                 <span className="service-category">{service.category}</span>
               </div>
               <div className="service-content">
@@ -325,17 +296,20 @@ const HomePage = () => {
                   <div className="service-rating">
                     <Star size={16} fill="#ffc939" color="#ffc939" />
                     <span>
-                      {service.rating} ({service.reviews})
+                      {service.rating || "N/A"} ({service.review_count || 0})
                     </span>
                   </div>
                 </div>
                 <div className="service-provider">
-                  <img
-                    src={service.provider.image || "/placeholder.svg"}
-                    alt={service.provider.name}
-                    className="provider-image"
-                  />
-                  <span className="provider-name">{service.provider.name}</span>
+                  <Link to={`/profile/${service.provider_id}`} className="provider-link">
+                    <img
+                      src={getImageUrl(service.provider_image)}
+                      alt="Provider"
+                      className="provider-image"
+                      onError={handleImageError}
+                    />
+                    <span className="provider-name">{service.provider_name}</span>
+                  </Link>
                 </div>
                 <div className="service-price">
                   <span className="price-amount">

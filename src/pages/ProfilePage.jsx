@@ -1,146 +1,402 @@
 "use client"
 
-import { useState } from "react"
-import { Link } from "react-router-dom"
-import { ChevronLeft, Star, Settings, Edit, MapPin, Calendar, MessageCircle, Clock, CheckCircle } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Link, useNavigate, useParams } from "react-router-dom"
+import { ChevronLeft, Star, Settings, Edit, MapPin, Calendar, MessageCircle, Clock, CheckCircle, Briefcase, LogOut, Loader, AlertTriangle } from "lucide-react"
+import { useAuth } from "../contexts/AuthContext"
 import "./ProfilePage.css"
-
-// Update SAMPLE_USER to use real profile photo
-const SAMPLE_USER = {
-  id: 1,
-  name: "Alexandru Munteanu",
-  image: "./profile-photos/alex.jpg", // Calea actualizată
-  location: "București, România",
-  memberSince: "Aprilie 2023",
-  rating: 4.8,
-  reviewCount: 24,
-  bio: "Instalator profesionist cu peste 10 ani de experiență în domeniu. Specializat în reparații și instalații sanitare pentru apartamente și case.",
-  services: [
-    {
-      id: 1,
-      title: "Reparații instalații sanitare",
-      category: "Instalații",
-      price: 150,
-      currency: "RON",
-      image: "/placeholder.svg?height=80&width=120",
-    },
-    {
-      id: 2,
-      title: "Montaj centrale termice",
-      category: "Instalații",
-      price: 350,
-      currency: "RON",
-      image: "/placeholder.svg?height=80&width=120",
-    },
-  ],
-  bookedServices: [
-    {
-      id: 101,
-      title: "Curățenie apartament",
-      category: "Curățenie",
-      price: 200,
-      currency: "RON",
-      image: "/placeholder.svg?height=80&width=120",
-      provider: {
-        name: "Denis V.",
-        rating: 4.9,
-      },
-      status: "completed",
-      date: "15 Iunie 2023",
-    },
-    {
-      id: 102,
-      title: "Transport mobilă",
-      category: "Transport",
-      price: 300,
-      currency: "RON",
-      image: "/placeholder.svg?height=80&width=120",
-      provider: {
-        name: "Vlad T.",
-        rating: 4.7,
-      },
-      status: "scheduled",
-      date: "25 Iulie 2023",
-    },
-  ],
-  reviews: [
-    {
-      id: 1,
-      user: {
-        name: "Florin P.",
-        image: "./profile-photos/florin.jpg", // Calea actualizată
-      },
-      rating: 5,
-      date: "15 Iulie 2023",
-      comment: "Serviciu excelent, a rezolvat problema rapid și profesionist. Recomand cu încredere!",
-    },
-    {
-      id: 2,
-      user: {
-        name: "Stefan C.",
-        image: "./profile-photos/stefan.jpg", // Calea actualizată
-      },
-      rating: 4,
-      date: "3 Iunie 2023",
-      comment: "Bun profesionist, a venit la timp și a rezolvat problema. Prețuri rezonabile.",
-    },
-  ],
-}
+import { fetchServices } from "../services/serviceApi"
+import { FaMapMarkerAlt, FaClock, FaEye } from 'react-icons/fa'
+import defaultProfileImage from '../assets/default-profile.jpg'
 
 const ProfilePage = () => {
+  const { user, logoutUser, loginUser } = useAuth()
+  const navigate = useNavigate()
+  const { userId } = useParams()
   const [activeTab, setActiveTab] = useState("services")
+  const [services, setServices] = useState([])
+  const [bookedServices, setBookedServices] = useState([])
+  const [reviews, setReviews] = useState([])
+  const [isUploading, setIsUploading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const fileInputRef = useRef(null)
+  const [profileData, setProfileData] = useState({
+    occupation: '',
+    education: '',
+    age: '',
+    location: '',
+    bio: '',
+    specialization: '',
+    experience: '',
+    languages: '',
+    availability: ''
+  })
+  const [profileUser, setProfileUser] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+  const isOwnProfile = !userId || (user && userId === user.id)
+  const [requests, setRequests] = useState([])
+
+  const getImageUrl = (path) => {
+    if (!path) return '/placeholder.svg';
+    
+    // Verificăm dacă este un URL temporar (blob:)
+    if (path.startsWith('blob:')) {
+      return path;
+    }
+    
+    // Verificăm dacă este un URL absolut
+    if (path.startsWith('http')) {
+      return path;
+    }
+    
+    // Verificăm dacă path începe cu '/'
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+    
+    // Altfel, construim URL-ul complet
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    return `${API_URL}${path}`;
+  };
+
+  const formatMemberDate = (date) => {
+    if (!date) return 'Dată necunoscută';
+    
+    try {
+      const memberDate = new Date(date);
+      if (isNaN(memberDate.getTime())) {
+        return 'Dată necunoscută';
+      }
+      return memberDate.toLocaleDateString('ro-RO', {
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Dată necunoscută';
+    }
+  };
+
+  const handleImageError = (e) => {
+    e.target.src = '/placeholder.svg'
+  }
+
+  // Fetch profile data when component mounts
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true)
+        if (userId) {
+          // Fetch other user's profile
+          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+          const response = await fetch(`${API_URL}/api/profile/${userId}`)
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch profile')
+          }
+          
+          const data = await response.json()
+          console.log('Profile data:', data) // Log profile data
+          setProfileUser(data)
+          setServices(data.services || [])
+
+          // Fetch user's requests
+          const requestsResponse = await fetch(`${API_URL}/api/requests/user/${userId}`)
+          if (requestsResponse.ok) {
+            const requestsData = await requestsResponse.json()
+            setRequests(requestsData || [])
+          }
+        } else if (user) {
+          // Set current user's profile
+          setProfileUser(user)
+          setProfileData({
+            occupation: user.occupation || '',
+            education: user.education || '',
+            age: user.age || '',
+            location: user.location || '',
+            bio: user.bio || '',
+            specialization: user.specialization || '',
+            experience: user.experience || '',
+            languages: user.languages || '',
+            availability: user.availability || ''
+          })
+
+          // Fetch current user's services and requests
+          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+          const [servicesResponse, requestsResponse] = await Promise.all([
+            fetch(`${API_URL}/api/services/user/${user.id}`),
+            fetch(`${API_URL}/api/requests/user/${user.id}`)
+          ])
+
+          if (servicesResponse.ok) {
+            const servicesData = await servicesResponse.json()
+            console.log('Services data:', servicesData) // Log services data
+            setServices(servicesData || [])
+          }
+
+          if (requestsResponse.ok) {
+            const requestsData = await requestsResponse.json()
+            setRequests(requestsData || [])
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err)
+        setError("Nu am putut încărca profilul. Vă rugăm încercați din nou mai târziu.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfileData()
+  }, [userId, user])
+
+  const handleSignOut = () => {
+    logoutUser()
+    navigate('/login')
+  }
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      alert("Imaginea trebuie să fie mai mică de 5MB")
+      return
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      alert("Te rugăm să încarci o imagine în format JPG, PNG sau WebP")
+      return
+    }
+
+    try {
+      setIsUploading(true)
+      
+      // Creăm un URL temporar pentru previzualizare
+      const tempImageUrl = URL.createObjectURL(file)
+      
+      // Actualizăm temporar imaginea de profil pentru feedback vizual imediat
+      const tempUser = { ...user, profileImage: tempImageUrl }
+      loginUser(tempUser)
+      
+      const formData = new FormData()
+      formData.append('image', file)
+
+      // Folosim URL-ul corect pentru API
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+      const apiEndpoint = `${API_URL}/api/profile/upload-image`
+      
+      console.log('API URL pentru încărcare imagine:', apiEndpoint)
+
+      const token = localStorage.getItem('token')
+      // Eliminăm header-ul Content-Type pentru că FormData îl va seta automat cu boundary corect
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.error('Server error:', errorData)
+        throw new Error(errorData || 'Încărcarea imaginii a eșuat')
+      }
+
+      const data = await response.json()
+      
+      if (!data.user || !data.imageUrl) {
+        throw new Error('Răspunsul serverului nu conține datele necesare')
+      }
+
+      // Update user context with new user data
+      const updatedUser = {
+        ...user,
+        profileImage: data.imageUrl
+      }
+      loginUser(updatedUser)
+
+      // Eliberăm URL-ul temporar
+      URL.revokeObjectURL(tempImageUrl)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Încărcarea imaginii a eșuat. Te rugăm să încerci din nou.')
+      
+      // Revert to original user data if there was an error
+      if (user) {
+        loginUser(user)
+      }
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target
+    setProfileData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault()
+    setIsSaving(true)
+    setSaveError(null)
+
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch(`${API_URL}/api/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Actualizarea profilului a eșuat')
+      }
+
+      const data = await response.json()
+      loginUser(data.user)
+      setProfileUser(data.user)
+      alert('Profilul a fost actualizat cu succes!')
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setSaveError('Actualizarea profilului a eșuat. Te rugăm să încerci din nou.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <Loader size={48} className="spinner" />
+        <p>Se încarcă profilul...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <AlertTriangle size={48} />
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()} className="retry-button">
+          Încearcă din nou
+        </button>
+      </div>
+    )
+  }
+
+  if (!profileUser) {
+    return (
+      <div className="error-container">
+        <AlertTriangle size={48} />
+        <h2>Profil negăsit</h2>
+        <p>Profilul căutat nu există sau a fost șters.</p>
+        <button onClick={() => navigate("/")} className="back-home-button">
+          Înapoi la pagina principală
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="profile-page">
-      <header className="profile-header">
-        <Link to="/" className="back-button">
-          <ChevronLeft size={24} />
-        </Link>
-        <h1>Profil</h1>
-        <Link to="/settings" className="settings-button">
-          <Settings size={24} />
-        </Link>
-      </header>
-
-      <div className="profile-hero">
-        <div className="profile-image-container">
-          <img src={SAMPLE_USER.image || "/placeholder.svg"} alt={SAMPLE_USER.name} className="profile-image" />
-          <button className="edit-profile-button">
-            <Edit size={16} />
-          </button>
-        </div>
-
-        <h2 className="profile-name">{SAMPLE_USER.name}</h2>
-
-        <div className="profile-rating">
-          <Star size={20} fill="#ffc939" color="#ffc939" />
-          <span>
-            {SAMPLE_USER.rating} ({SAMPLE_USER.reviewCount} recenzii)
-          </span>
-        </div>
-
-        <div className="profile-meta">
-          <div className="meta-item">
-            <MapPin size={16} />
-            <span>{SAMPLE_USER.location}</span>
+      <div className="profile-header">
+        <div className="profile-cover"></div>
+        <div className="profile-info">
+          {isOwnProfile ? (
+            <div className="profile-image-container" onClick={handleImageClick}>
+              {isUploading ? (
+                <div className="uploading-overlay">
+                  <Loader size={24} className="spinner" />
+                </div>
+              ) : (
+                <div className="edit-overlay">
+                  <Edit size={20} />
+                </div>
+              )}
+              <img
+                src={getImageUrl(profileUser.profileImage) || defaultProfileImage}
+                alt={`${profileUser.firstName} ${profileUser.lastName}`}
+                className="profile-image"
+                onError={handleImageError}
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/jpeg,image/png,image/webp"
+                style={{ display: 'none' }}
+              />
+            </div>
+          ) : (
+            <div className="profile-image-container">
+              <img
+                src={getImageUrl(profileUser.profileImage) || defaultProfileImage}
+                alt={`${profileUser.firstName} ${profileUser.lastName}`}
+                className="profile-image"
+                onError={handleImageError}
+              />
+            </div>
+          )}
+          
+          <div className="profile-details">
+            <h1 className="profile-name">{`${profileUser.firstName} ${profileUser.lastName}`}</h1>
+            <div className="profile-meta">
+              {profileUser.location && (
+                <div className="meta-item">
+                  <MapPin size={16} />
+                  <span>{profileUser.location}</span>
+                </div>
+              )}
+              <div className="meta-item">
+                <Calendar size={16} />
+                <span>Membru din {formatMemberDate(profileUser.memberSince)}</span>
+              </div>
+              {profileUser.rating && (
+                <div className="meta-item">
+                  <Star size={16} fill="#ffc939" color="#ffc939" />
+                  <span>{profileUser.rating} ({profileUser.reviewCount || 0} recenzii)</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="meta-item">
-            <Calendar size={16} />
-            <span>Membru din {SAMPLE_USER.memberSince}</span>
-          </div>
+          
+          {isOwnProfile ? (
+            <div className="profile-actions">
+              <Link to="/settings" className="settings-button">
+                <Settings size={20} />
+              </Link>
+              <button className="logout-button" onClick={handleSignOut}>
+                <LogOut size={20} />
+              </button>
+            </div>
+          ) : (
+            <div className="profile-actions">
+              <Link to={`/messages/${profileUser.id}`} className="message-button">
+                <MessageCircle size={20} />
+                <span>Contactează</span>
+              </Link>
+            </div>
+          )}
         </div>
-
-        <div className="profile-actions">
-          <Link to="/messages" className="action-button message-button">
-            <MessageCircle size={20} />
-            <span>Mesaj</span>
-          </Link>
-        </div>
-      </div>
-
-      <div className="profile-bio">
-        <h3>Despre mine</h3>
-        <p>{SAMPLE_USER.bio}</p>
       </div>
 
       <div className="profile-tabs">
@@ -148,129 +404,418 @@ const ProfilePage = () => {
           className={`tab-button ${activeTab === "services" ? "active" : ""}`}
           onClick={() => setActiveTab("services")}
         >
-          Servicii oferite
+          <Briefcase size={20} />
+          <span>Servicii</span>
         </button>
         <button
-          className={`tab-button ${activeTab === "booked" ? "active" : ""}`}
-          onClick={() => setActiveTab("booked")}
+          className={`tab-button ${activeTab === "requests" ? "active" : ""}`}
+          onClick={() => setActiveTab("requests")}
         >
-          Servicii rezervate
+          <MessageCircle size={20} />
+          <span>Cereri</span>
         </button>
-        <button
-          className={`tab-button ${activeTab === "reviews" ? "active" : ""}`}
-          onClick={() => setActiveTab("reviews")}
-        >
-          Recenzii
-        </button>
+        {isOwnProfile && (
+          <>
+            <button
+              className={`tab-button ${activeTab === "bookings" ? "active" : ""}`}
+              onClick={() => setActiveTab("bookings")}
+            >
+              <CheckCircle size={20} />
+              <span>Rezervări</span>
+            </button>
+            <button
+              className={`tab-button ${activeTab === "reviews" ? "active" : ""}`}
+              onClick={() => setActiveTab("reviews")}
+            >
+              <Star size={20} />
+              <span>Recenzii</span>
+            </button>
+            <button
+              className={`tab-button ${activeTab === "profile" ? "active" : ""}`}
+              onClick={() => setActiveTab("profile")}
+            >
+              <Settings size={20} />
+              <span>Editare Profil</span>
+            </button>
+          </>
+        )}
       </div>
 
-      <div className="tab-content">
+      <div className="profile-content">
         {activeTab === "services" && (
-          <div className="services-list">
-            {SAMPLE_USER.services.map((service) => (
-              <Link to={`/service/${service.id}`} key={service.id} className="service-item">
-                <img src={service.image || "/placeholder.svg"} alt={service.title} className="service-thumbnail" />
-                <div className="service-details">
-                  <h4>{service.title}</h4>
-                  <span className="service-category">{service.category}</span>
-                  <span className="service-price">
-                    {service.price} {service.currency}
-                  </span>
-                </div>
-              </Link>
-            ))}
-            <Link to="/post-service" className="add-service-button">
-              + Adaugă un serviciu nou
-            </Link>
+          <div className="services-section">
+            <div className="section-header">
+              <h2>Servicii oferite</h2>
+              {isOwnProfile && (
+                <Link to="/post-service" className="add-button">
+                  Adaugă serviciu
+                </Link>
+              )}
+            </div>
+
+            {loading ? (
+              <div className="loading-container">
+                <Loader size={48} className="spinner" />
+                <p>Se încarcă serviciile...</p>
+              </div>
+            ) : error ? (
+              <div className="error-container">
+                <AlertTriangle size={48} />
+                <p>{error}</p>
+                <button className="retry-button" onClick={() => window.location.reload()}>
+                  Încearcă din nou
+                </button>
+              </div>
+            ) : services.length === 0 ? (
+              <div className="empty-state">
+                <p>Nu există servicii publicate.</p>
+                {isOwnProfile && (
+                  <Link to="/post-service" className="add-button">
+                    Adaugă primul tău serviciu
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="services-grid">
+                {services.map((service) => (
+                  <div key={service.id} className="service-card">
+                    <div className="service-image-container">
+                      <img
+                        src={getImageUrl(service.image_url) || defaultProfileImage}
+                        alt={service.title}
+                        className="service-image"
+                        onError={handleImageError}
+                      />
+                      <span className="service-category">{service.category}</span>
+                    </div>
+                    <div className="service-content">
+                      <h3 className="service-title">{service.title}</h3>
+                      <div className="service-meta">
+                        <div className="service-location">
+                          <FaMapMarkerAlt />
+                          <span>{service.location}</span>
+                        </div>
+                        <div className="service-rating">
+                          <Star size={16} fill="#ffc939" color="#ffc939" />
+                          <span>
+                            {service.rating || "N/A"} ({service.review_count || 0})
+                          </span>
+                        </div>
+                      </div>
+                      <div className="service-price">
+                        <span className="price-amount">
+                          {service.price} {service.currency}
+                        </span>
+                      </div>
+                      <div className="service-actions">
+                        <Link to={`/service/${service.id}`} className="view-button">
+                          <FaEye /> Vezi detalii
+                        </Link>
+                        {isOwnProfile && (
+                          <Link to={`/edit-service/${service.id}`} className="edit-button">
+                            <Edit size={16} />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {activeTab === "booked" && (
-          <div className="booked-services-list">
-            {SAMPLE_USER.bookedServices.map((service) => (
-              <div key={service.id} className="booked-service-item">
-                <img src={service.image || "/placeholder.svg"} alt={service.title} className="service-thumbnail" />
-                <div className="service-details">
-                  <h4>{service.title}</h4>
-                  <span className="service-category">{service.category}</span>
-                  <div className="service-provider">
-                    <span>Prestator: {service.provider.name}</span>
-                    <div className="provider-rating">
-                      <Star size={14} fill="#ffc939" color="#ffc939" />
-                      <span>{service.provider.rating}</span>
-                    </div>
-                  </div>
-                  <div className="service-booking-details">
-                    <div className="booking-date">
-                      <Calendar size={14} />
-                      <span>{service.date}</span>
-                    </div>
-                    <div className="booking-status">
-                      <span className={`status-badge ${service.status}`}>
-                        {service.status === "completed" ? (
-                          <>
-                            <CheckCircle size={14} /> Finalizat
-                          </>
-                        ) : (
-                          <>
-                            <Clock size={14} /> Programat
-                          </>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="service-price">
-                    {service.price} {service.currency}
-                  </span>
-                </div>
-                <div className="booked-service-actions">
-                  <Link to={`/messages`} className="action-link">
-                    Contactează
-                  </Link>
-                  {service.status === "completed" && (
-                    <Link to={`/review/${service.id}`} className="action-link">
-                      Lasă o recenzie
-                    </Link>
-                  )}
-                </div>
+        {activeTab === "requests" && (
+          <div className="requests-section">
+            <div className="section-header">
+              <h2>Cereri postate</h2>
+              {isOwnProfile && (
+                <Link to="/post-request" className="add-button">
+                  Adaugă cerere
+                </Link>
+              )}
+            </div>
+
+            {loading ? (
+              <div className="loading-container">
+                <Loader size={48} className="spinner" />
+                <p>Se încarcă cererile...</p>
               </div>
-            ))}
-            <Link to="/" className="find-service-button">
-              Caută servicii noi
-            </Link>
+            ) : error ? (
+              <div className="error-container">
+                <AlertTriangle size={48} />
+                <p>{error}</p>
+                <button className="retry-button" onClick={() => window.location.reload()}>
+                  Încearcă din nou
+                </button>
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="empty-state">
+                <p>Nu există cereri postate.</p>
+                {isOwnProfile && (
+                  <Link to="/post-request" className="add-button">
+                    Adaugă prima ta cerere
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="requests-grid">
+                {requests.map((request) => (
+                  <div key={request.id} className="request-card">
+                    <div className="request-image-container">
+                      <img
+                        src={getImageUrl(request.images[0].image_url) || defaultProfileImage}
+                        alt={request.title}
+                        className="request-image"
+                        onError={handleImageError}
+                      />
+                      <span className="request-category">{request.category}</span>
+                    </div>
+                    <div className="request-content">
+                      <h3 className="request-title">{request.title}</h3>
+                      <div className="request-meta">
+                        <div className="request-location">
+                          <FaMapMarkerAlt />
+                          <span>{request.location}</span>
+                        </div>
+                        <div className="request-deadline">
+                          <FaClock />
+                          <span>{request.deadline}</span>
+                        </div>
+                      </div>
+                      <div className="request-budget">
+                        <span className="budget-amount">
+                          {request.budget} {request.currency}
+                        </span>
+                      </div>
+                      <div className="request-actions">
+                        <Link to={`/request/${request.id}`} className="view-button">
+                          <FaEye /> Vezi detalii
+                        </Link>
+                        {isOwnProfile && (
+                          <Link to={`/edit-request/${request.id}`} className="edit-button">
+                            <Edit size={16} />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "bookings" && (
+          <div className="bookings-section">
+            <div className="section-header">
+              <h2>Rezervările mele</h2>
+            </div>
+            <div className="empty-state">
+              <p>Nu ai nicio rezervare activă.</p>
+            </div>
           </div>
         )}
 
         {activeTab === "reviews" && (
-          <div className="reviews-list">
-            {SAMPLE_USER.reviews.map((review) => (
-              <div key={review.id} className="review-item">
-                <div className="review-header">
-                  <div className="reviewer-info">
-                    <img
-                      src={review.user.image || "/placeholder.svg"}
-                      alt={review.user.name}
-                      className="reviewer-image"
-                    />
-                    <div>
-                      <div className="reviewer-name">{review.user.name}</div>
-                      <div className="review-date">{review.date}</div>
-                    </div>
-                  </div>
-                  <div className="review-rating">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        fill={i < review.rating ? "#ffc939" : "transparent"}
-                        color={i < review.rating ? "#ffc939" : "#ccc"}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="review-comment">{review.comment}</p>
+          <div className="reviews-section">
+            <div className="section-header">
+              <h2>Recenziile mele</h2>
+            </div>
+            <div className="empty-state">
+              <p>Nu ai nicio recenzie încă.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "profile" && isOwnProfile && (
+          <div className="profile-edit-section">
+            <div className="section-header">
+              <h2>Editare Profil</h2>
+            </div>
+
+            <form onSubmit={handleProfileSubmit} className="profile-form">
+              <div className="form-group">
+                <label htmlFor="occupation">Ocupație</label>
+                <input
+                  type="text"
+                  id="occupation"
+                  name="occupation"
+                  value={profileData.occupation}
+                  onChange={handleProfileChange}
+                  placeholder="Ex: Instalator, Profesor, etc."
+                />
               </div>
-            ))}
+
+              <div className="form-group">
+                <label htmlFor="education">Educație</label>
+                <input
+                  type="text"
+                  id="education"
+                  name="education"
+                  value={profileData.education}
+                  onChange={handleProfileChange}
+                  placeholder="Ex: Licență în Inginerie"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="age">Vârstă</label>
+                <input
+                  type="number"
+                  id="age"
+                  name="age"
+                  value={profileData.age}
+                  onChange={handleProfileChange}
+                  min="18"
+                  max="100"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="location">Locație</label>
+                <input
+                  type="text"
+                  id="location"
+                  name="location"
+                  value={profileData.location}
+                  onChange={handleProfileChange}
+                  placeholder="Ex: București, Sector 1"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="bio">Descriere</label>
+                <textarea
+                  id="bio"
+                  name="bio"
+                  value={profileData.bio}
+                  onChange={handleProfileChange}
+                  placeholder="Spune-ne mai multe despre tine..."
+                  rows="4"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="specialization">Specializare</label>
+                <input
+                  type="text"
+                  id="specialization"
+                  name="specialization"
+                  value={profileData.specialization}
+                  onChange={handleProfileChange}
+                  placeholder="Ex: Instalații electrice, Matematică"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="experience">Experiență</label>
+                <input
+                  type="text"
+                  id="experience"
+                  name="experience"
+                  value={profileData.experience}
+                  onChange={handleProfileChange}
+                  placeholder="Ex: 5 ani în domeniu"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="languages">Limbi vorbite</label>
+                <input
+                  type="text"
+                  id="languages"
+                  name="languages"
+                  value={profileData.languages}
+                  onChange={handleProfileChange}
+                  placeholder="Ex: Română, Engleză"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="availability">Disponibilitate</label>
+                <select
+                  id="availability"
+                  name="availability"
+                  value={profileData.availability}
+                  onChange={handleProfileChange}
+                >
+                  <option value="">Selectează disponibilitatea</option>
+                  <option value="full-time">Full-time</option>
+                  <option value="part-time">Part-time</option>
+                  <option value="weekend">Weekend</option>
+                  <option value="flexible">Program flexibil</option>
+                </select>
+              </div>
+
+              {saveError && (
+                <div className="error-message">
+                  {saveError}
+                </div>
+              )}
+
+              <button type="submit" className="save-button" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader size={16} className="spinner" />
+                    Se salvează...
+                  </>
+                ) : (
+                  'Salvează modificările'
+                )}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab !== "profile" && profileUser.bio && (
+          <div className="profile-bio">
+            <h3>Despre mine</h3>
+            <p>{profileUser.bio}</p>
+          </div>
+        )}
+
+        {activeTab !== "profile" && (
+          <div className="professional-info">
+            <h3>Informații profesionale</h3>
+            <div className="info-grid">
+              {profileUser.occupation && (
+                <div className="info-item">
+                  <h4>Ocupație</h4>
+                  <p>{profileUser.occupation}</p>
+                </div>
+              )}
+              {profileUser.education && (
+                <div className="info-item">
+                  <h4>Educație</h4>
+                  <p>{profileUser.education}</p>
+                </div>
+              )}
+              {profileUser.specialization && (
+                <div className="info-item">
+                  <h4>Specializare</h4>
+                  <p>{profileUser.specialization}</p>
+                </div>
+              )}
+              {profileUser.experience && (
+                <div className="info-item">
+                  <h4>Experiență</h4>
+                  <p>{profileUser.experience}</p>
+                </div>
+              )}
+              {profileUser.languages && (
+                <div className="info-item">
+                  <h4>Limbi vorbite</h4>
+                  <p>{profileUser.languages}</p>
+                </div>
+              )}
+              {profileUser.availability && (
+                <div className="info-item">
+                  <h4>Disponibilitate</h4>
+                  <p>{profileUser.availability}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -279,4 +824,3 @@ const ProfilePage = () => {
 }
 
 export default ProfilePage
-

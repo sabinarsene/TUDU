@@ -1,18 +1,43 @@
 "use client"
 
 import { useState } from "react"
-import { Link } from "react-router-dom"
-import { Search, Bell, Menu, X, MessageCircle, FileText } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+import { Search, Bell, Menu, X, MessageCircle, FileText, LogOut } from "lucide-react"
+import { useAuth } from "../contexts/AuthContext"
 import "./Header.css"
 import logoImage from "../assets/images/favicon.png"
 
 const Header = () => {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
+  }
+
+  // Function to get profile image URL
+  const getProfileImageUrl = () => {
+    if (!user || !user.profileImage) {
+      return "/placeholder.svg"
+    }
+    
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+    return `${API_URL}${user.profileImage}`
+  }
+
+  // Function to handle image loading errors
+  const handleImageError = (e) => {
+    e.target.src = "/placeholder.svg"
+  }
+
+  // Function for logout
+  const handleLogout = (e) => {
+    e.preventDefault()
+    logout()
+    toggleMobileMenu() // Close mobile menu if open
   }
 
   return (
@@ -61,7 +86,12 @@ const Header = () => {
             <span className="notification-badge">5</span>
           </Link>
           <Link to="/profile" className="profile-link">
-            <img src="./profile-photos/alex.jpg" alt="Profile" className="profile-image" />
+            <img 
+              src={getProfileImageUrl()} 
+              alt="Profile" 
+              className="profile-image" 
+              onError={handleImageError}
+            />
           </Link>
 
           {/* Mobile Menu Button */}
@@ -79,9 +109,14 @@ const Header = () => {
       <div className={`mobile-menu ${isMobileMenuOpen ? "open" : ""}`}>
         <div className="mobile-menu-content">
           <div className="mobile-menu-header">
-            <img src="./profile-photos/alex.jpg" alt="Profile" className="mobile-profile-image" />
+            <img 
+              src={getProfileImageUrl()} 
+              alt="Profile" 
+              className="mobile-profile-image" 
+              onError={handleImageError}
+            />
             <div className="mobile-profile-info">
-              <h3>Alexandru Munteanu</h3>
+              <h3>{user ? `${user.firstName} ${user.lastName}` : 'Utilizator'}</h3>
               <p>Vezi profilul tău</p>
             </div>
           </div>
@@ -119,9 +154,10 @@ const Header = () => {
           </nav>
 
           <div className="mobile-menu-footer">
-            <Link to="/logout" className="logout-button">
-              Deconectare
-            </Link>
+            <button onClick={handleLogout} className="logout-button">
+              <LogOut size={18} />
+              <span>Deconectare</span>
+            </button>
           </div>
         </div>
       </div>
@@ -133,4 +169,3 @@ const Header = () => {
 }
 
 export default Header
-

@@ -1,0 +1,147 @@
+.profile-setup-page {
+  min-height: 100vh;
+  background-color: var(--off-white);
+}
+
+.setup-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--dark-blue);
+  color: white;
+  box-shadow: 0 2px 8px rgba(3, 20, 92, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.setup-header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.setup-header .back-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.setup-header .back-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.setup-content {
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.setup-form {
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+.form-section {
+  margin-bottom: 32px;
+}
+
+.form-section h2 {
+  font-size: 18px;
+  color: var(--dark-blue);
+  margin: 0 0 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 16px;
+  color: var(--dark-blue);
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(0, 114, 254, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
+}
+
+.error-message {
+  background-color: rgba(255, 29, 72, 0.1);
+  color: #e01a5f;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 14px;
+  background-color: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: var(--dark-blue);
+}
+
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .setup-form {
+    padding: 16px;
+  }
+} 

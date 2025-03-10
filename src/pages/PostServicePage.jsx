@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ChevronLeft, Upload, X, Info } from "lucide-react"
 import "./PostServicePage.css"
+import { createService } from "../services/serviceApi"
+import { useAuth } from "../contexts/AuthContext"
 
 const CATEGORIES = [
   "Instalații",
@@ -17,51 +19,42 @@ const CATEGORIES = [
   "Design",
   "Construcții",
   "Sănătate",
-  "Alte servicii",
+  "Meditații",
+  "Frumusețe",
+  "Animale",
+  "Auto",
+  "Evenimente",
 ]
 
 const PostServicePage = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
-  // Modifică structura formData pentru a include câmpurile detaliate de locație
+  // Verificăm dacă utilizatorul este autentificat
+  if (!user) {
+    navigate("/login")
+  }
+
   const [formData, setFormData] = useState({
     title: "",
     category: "",
     price: "",
-    location: {
-      county: "",
-      city: "",
-      street: "",
-      number: "",
-    },
+    currency: "RON",
+    location: "",
     description: "",
-    images: [],
   })
 
   const [errors, setErrors] = useState({})
   const [previewImages, setPreviewImages] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Modifică funcția handleChange pentru a gestiona câmpurile nested pentru locație
   const handleChange = (e) => {
     const { name, value } = e.target
 
-    // Verifică dacă este un câmp de locație
-    if (name.startsWith("location.")) {
-      const locationField = name.split(".")[1]
-      setFormData({
-        ...formData,
-        location: {
-          ...formData.location,
-          [locationField]: value,
-        },
-      })
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      })
-    }
+    setFormData({
+      ...formData,
+      [name]: value,
+    })
 
     // Clear error when field is edited
     if (errors[name]) {
@@ -99,7 +92,7 @@ const PostServicePage = () => {
 
     setFormData({
       ...formData,
-      images: [...formData.images, ...files],
+      images: [...(formData.images || []), ...files],
     })
 
     // Clear error when images are added
@@ -116,7 +109,8 @@ const PostServicePage = () => {
     newPreviewImages.splice(index, 1)
     setPreviewImages(newPreviewImages)
 
-    const newImages = [...formData.images]
+    // Also remove from formData
+    const newImages = [...(formData.images || [])]
     newImages.splice(index, 1)
     setFormData({
       ...formData,
@@ -124,7 +118,6 @@ const PostServicePage = () => {
     })
   }
 
-  // Modifică funcția validateForm pentru a valida câmpurile de locație
   const validateForm = () => {
     const newErrors = {}
 
@@ -140,17 +133,12 @@ const PostServicePage = () => {
 
     if (!formData.price) {
       newErrors.price = "Prețul este obligatoriu"
-    } else if (isNaN(formData.price) || Number.parseFloat(formData.price) <= 0) {
+    } else if (isNaN(formData.price) || Number(formData.price) <= 0) {
       newErrors.price = "Prețul trebuie să fie un număr pozitiv"
     }
 
-    // Validare pentru câmpurile de locație
-    if (!formData.location.county.trim()) {
-      newErrors["location.county"] = "Județul este obligatoriu"
-    }
-
-    if (!formData.location.city.trim()) {
-      newErrors["location.city"] = "Localitatea este obligatorie"
+    if (!formData.location.trim()) {
+      newErrors.location = "Locația este obligatorie"
     }
 
     if (!formData.description.trim()) {
@@ -159,7 +147,7 @@ const PostServicePage = () => {
       newErrors.description = "Descrierea trebuie să aibă cel puțin 20 de caractere"
     }
 
-    if (formData.images.length === 0) {
+    if (!previewImages.length) {
       newErrors.images = "Trebuie să încarci cel puțin o imagine"
     }
 
@@ -182,13 +170,36 @@ const PostServicePage = () => {
     setIsSubmitting(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Get token from localStorage
+      const token = localStorage.getItem('token')
+      
+      if (!token) {
+        throw new Error('Nu ești autentificat')
+      }
 
-      console.log("Service posted:", formData)
+      // Create FormData object for the API call
+      const serviceFormData = new FormData()
+      serviceFormData.append('title', formData.title)
+      serviceFormData.append('category', formData.category)
+      serviceFormData.append('price', formData.price)
+      serviceFormData.append('currency', formData.currency)
+      serviceFormData.append('location', formData.location)
+      serviceFormData.append('description', formData.description)
+      
+      // Append images
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach((image, index) => {
+          serviceFormData.append('images', image)
+        })
+      }
+
+      // Call the API to create the service
+      const response = await createService(serviceFormData, token)
+      
+      console.log("Service created:", response)
 
       // Redirect to home page or service details page
-      navigate("/")
+      navigate("/success?type=service")
     } catch (error) {
       console.error("Error posting service:", error)
       setErrors({
@@ -262,60 +273,17 @@ const PostServicePage = () => {
             </div>
 
             <div className="form-group">
-              <label>Locație *</label>
-              <div className="location-fields">
-                <div className="location-field">
-                  <label htmlFor="county">Județ *</label>
-                  <input
-                    type="text"
-                    id="county"
-                    name="location.county"
-                    value={formData.location.county}
-                    onChange={handleChange}
-                    placeholder="Ex: București"
-                    className={errors["location.county"] ? "error" : ""}
-                  />
-                  {errors["location.county"] && <div className="error-message">{errors["location.county"]}</div>}
-                </div>
-
-                <div className="location-field">
-                  <label htmlFor="city">Localitate *</label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="location.city"
-                    value={formData.location.city}
-                    onChange={handleChange}
-                    placeholder="Ex: Sector 1"
-                    className={errors["location.city"] ? "error" : ""}
-                  />
-                  {errors["location.city"] && <div className="error-message">{errors["location.city"]}</div>}
-                </div>
-
-                <div className="location-field">
-                  <label htmlFor="street">Stradă</label>
-                  <input
-                    type="text"
-                    id="street"
-                    name="location.street"
-                    value={formData.location.street}
-                    onChange={handleChange}
-                    placeholder="Ex: Strada Victoriei"
-                  />
-                </div>
-
-                <div className="location-field">
-                  <label htmlFor="number">Număr</label>
-                  <input
-                    type="text"
-                    id="number"
-                    name="location.number"
-                    value={formData.location.number}
-                    onChange={handleChange}
-                    placeholder="Ex: 10"
-                  />
-                </div>
-              </div>
+              <label htmlFor="location">Locație *</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="Ex: București, Sector 1"
+                className={errors.location ? "error" : ""}
+              />
+              {errors.location && <div className="error-message">{errors.location}</div>}
             </div>
           </div>
 

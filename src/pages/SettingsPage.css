@@ -1,70 +1,51 @@
 .settings-page {
-  min-height: 100vh;
-  background-color: var(--off-white);
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* Update header background */
 .settings-header {
   display: flex;
   align-items: center;
-  padding: 16px;
-  background-color: var(--dark-blue);
-  color: white;
-  box-shadow: 0 2px 8px rgba(3, 20, 92, 0.3);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.settings-header h1 {
-  font-size: 20px;
-  color: white;
-  margin: 0 0 0 16px;
+  margin-bottom: 32px;
 }
 
 .back-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: white;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  gap: 8px;
+  color: #666;
+  text-decoration: none;
+  margin-right: 24px;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  color: #0072fe;
 }
 
-.settings-container {
-  max-width: 1200px;
-  margin: 24px auto;
-  padding: 0 16px;
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 24px;
+.settings-header h1 {
+  font-size: 24px;
+  color: #03145c;
+  margin: 0;
 }
 
-/* Navigation */
-.settings-nav {
-  background-color: white;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 88px;
-  height: fit-content;
+.settings-content {
+  display: flex;
+  gap: 32px;
 }
 
-.nav-button {
+.settings-sidebar {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-button {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  padding: 12px;
+  padding: 12px 16px;
   border: none;
   background: none;
   color: #666;
@@ -74,45 +55,48 @@
   transition: all 0.2s ease;
 }
 
-.nav-button:hover {
-  background-color: #f1f5f9;
-  color: var(--dark-blue);
+.sidebar-button:hover {
+  background-color: #f8f9fa;
+  color: #0072fe;
 }
 
-.nav-button.active {
-  background-color: var(--blue);
-  color: white;
+.sidebar-button.active {
+  background-color: #e6f0ff;
+  color: #0072fe;
 }
 
-/* Content area */
-.settings-content {
+.settings-main {
+  flex: 1;
   background-color: white;
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 24px;
 }
 
 .settings-section {
-  margin-bottom: 32px;
+  max-width: 600px;
 }
 
 .settings-section h2 {
   font-size: 20px;
-  color: var(--dark-blue);
-  margin: 0 0 24px;
-}
-
-/* Profile image upload */
-.profile-image-upload {
-  display: flex;
-  justify-content: center;
+  color: #03145c;
   margin-bottom: 24px;
 }
 
-.image-container {
+.profile-image-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.profile-image-container {
   position: relative;
   width: 120px;
   height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .profile-image {
@@ -120,48 +104,61 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  border: 3px solid var(--blue);
+  background-color: #f0f0f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.image-upload-button {
+.profile-image-container.uploading .profile-image {
+  opacity: 0.5;
+}
+
+.upload-overlay {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 36px;
-  height: 36px;
-  background-color: var(--blue);
-  color: white;
-  border-radius: 50%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+}
+
+.image-upload-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   cursor: pointer;
-  border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s ease;
+  color: #666;
+  transition: all 0.2s ease;
 }
 
 .image-upload-button:hover {
-  background-color: var(--dark-blue);
+  background-color: #e6f0ff;
+  color: #0072fe;
+  border-color: #0072fe;
 }
 
-.hidden {
-  display: none;
-}
-
-/* Form styles */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-group label {
   display: block;
-  font-weight: 500;
+  font-size: 16px;
+  color: #03145c;
   margin-bottom: 8px;
-  color: var(--dark-blue);
 }
 
-.form-group input,
-.form-group select {
+.form-group input {
   width: 100%;
   padding: 12px 16px;
   border: 1px solid #e2e8f0;
@@ -170,14 +167,88 @@
   transition: all 0.2s ease;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+.form-group input:focus {
   outline: none;
-  border-color: var(--blue);
+  border-color: #0072fe;
   box-shadow: 0 0 0 3px rgba(0, 114, 254, 0.1);
 }
 
-/* Password input */
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.setting-info h3 {
+  font-size: 16px;
+  color: #03145c;
+  margin-bottom: 4px;
+}
+
+.setting-info p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #0072fe;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.password-form {
+  max-width: 400px;
+}
+
 .password-input {
   position: relative;
 }
@@ -192,158 +263,51 @@
   color: #666;
   cursor: pointer;
   padding: 4px;
+  border-radius: 4px;
 }
 
-/* Notification options */
-.notification-options,
-.privacy-options {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.notification-option,
-.privacy-option {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
+.toggle-password:hover {
   background-color: #f8f9fa;
-  border-radius: 12px;
 }
 
-.notification-option h3,
-.privacy-option h3 {
-  font-size: 16px;
-  margin: 0 0 4px;
-  color: var(--dark-blue);
-}
-
-.notification-option p,
-.privacy-option p {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-/* Toggle switch */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 24px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #cbd5e1;
-  transition: 0.4s;
-  border-radius: 24px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: 0.4s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: var(--blue);
-}
-
-input:checked + .slider:before {
-  transform: translateX(24px);
-}
-
-/* Save button */
-.save-button {
-  background-color: var(--blue);
+.submit-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #0072fe;
   color: white;
   border: none;
-  padding: 12px 24px;
   border-radius: 8px;
   font-size: 16px;
-  font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.save-button:hover {
-  background-color: var(--dark-blue);
+.submit-button:hover {
+  background-color: #0056cc;
 }
 
-/* Danger zone */
-.danger-zone {
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid #e2e8f0;
+.delete-account-content {
+  text-align: center;
+  padding: 32px;
 }
 
-.danger-zone h3 {
-  font-size: 18px;
-  color: var(--pink);
-  margin: 0 0 16px;
+.delete-account-content p {
+  color: #666;
+  margin-bottom: 24px;
 }
 
-.delete-account {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.delete-button {
   padding: 12px 24px;
-  background-color: rgba(255, 29, 104, 0.1);
-  color: var(--pink);
-  border: 1px solid var(--pink);
+  background-color: #dc3545;
+  color: white;
+  border: none;
   border-radius: 8px;
   font-size: 16px;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
-.delete-account:hover {
-  background-color: var(--pink);
-  color: white;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .settings-container {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-nav {
-    position: static;
-    margin-bottom: 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .notification-option,
-  .privacy-option {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .switch {
-    align-self: flex-end;
-  }
+.delete-button:hover {
+  background-color: #c82333;
 }
 

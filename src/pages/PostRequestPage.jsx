@@ -3,7 +3,11 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ChevronLeft, Upload, X, Info, Calendar } from "lucide-react"
+import DatePicker from "react-datepicker"
+import "react-datepicker/dist/react-datepicker.css"
 import "./PostRequestPage.css"
+import { createRequest } from "../services/requestApi"
+import { useAuth } from "../contexts/AuthContext"
 
 const CATEGORIES = [
   "Instalații",
@@ -17,7 +21,11 @@ const CATEGORIES = [
   "Design",
   "Construcții",
   "Sănătate",
-  "Alte servicii",
+  "Meditații",
+  "Frumusețe",
+  "Animale",
+  "Auto",
+  "Evenimente",
 ]
 
 const DEADLINES = [
@@ -32,19 +40,20 @@ const DEADLINES = [
 
 const PostRequestPage = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  // Verificăm dacă utilizatorul este autentificat
+  if (!user) {
+    navigate("/login")
+  }
 
   const [formData, setFormData] = useState({
     title: "",
     category: "",
-    budgetMin: "",
-    budgetMax: "",
-    location: {
-      county: "",
-      city: "",
-      street: "",
-      number: "",
-    },
-    deadline: "",
+    budget: "",
+    currency: "RON",
+    location: "",
+    deadline: null,
     description: "",
     images: [],
     contactPreference: "orice",
@@ -57,22 +66,10 @@ const PostRequestPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target
 
-    // Verifică dacă este un câmp de locație
-    if (name.startsWith("location.")) {
-      const locationField = name.split(".")[1]
-      setFormData({
-        ...formData,
-        location: {
-          ...formData.location,
-          [locationField]: value,
-        },
-      })
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      })
-    }
+    setFormData({
+      ...formData,
+      [name]: value,
+    })
 
     // Clear error when field is edited
     if (errors[name]) {
@@ -81,6 +78,13 @@ const PostRequestPage = () => {
         [name]: null,
       })
     }
+  }
+
+  const handleDateChange = (date) => {
+    setFormData({
+      ...formData,
+      deadline: date,
+    })
   }
 
   const handleImageChange = (e) => {
@@ -110,7 +114,7 @@ const PostRequestPage = () => {
 
     setFormData({
       ...formData,
-      images: [...formData.images, ...files],
+      images: [...(formData.images || []), ...files],
     })
 
     // Clear error when images are added
@@ -127,7 +131,8 @@ const PostRequestPage = () => {
     newPreviewImages.splice(index, 1)
     setPreviewImages(newPreviewImages)
 
-    const newImages = [...formData.images]
+    // Also remove from formData
+    const newImages = [...(formData.images || [])]
     newImages.splice(index, 1)
     setFormData({
       ...formData,
@@ -148,27 +153,14 @@ const PostRequestPage = () => {
       newErrors.category = "Categoria este obligatorie"
     }
 
-    if (!formData.budgetMin) {
-      newErrors.budgetMin = "Bugetul minim este obligatoriu"
-    } else if (isNaN(formData.budgetMin) || Number.parseFloat(formData.budgetMin) < 0) {
-      newErrors.budgetMin = "Bugetul minim trebuie să fie un număr pozitiv"
+    if (!formData.budget) {
+      newErrors.budget = "Bugetul este obligatoriu"
+    } else if (isNaN(formData.budget) || Number(formData.budget) <= 0) {
+      newErrors.budget = "Bugetul trebuie să fie un număr pozitiv"
     }
 
-    if (!formData.budgetMax) {
-      newErrors.budgetMax = "Bugetul maxim este obligatoriu"
-    } else if (isNaN(formData.budgetMax) || Number.parseFloat(formData.budgetMax) <= 0) {
-      newErrors.budgetMax = "Bugetul maxim trebuie să fie un număr pozitiv"
-    } else if (Number.parseFloat(formData.budgetMax) < Number.parseFloat(formData.budgetMin)) {
-      newErrors.budgetMax = "Bugetul maxim trebuie să fie mai mare decât bugetul minim"
-    }
-
-    // Validare pentru câmpurile de locație
-    if (!formData.location.county.trim()) {
-      newErrors["location.county"] = "Județul este obligatoriu"
-    }
-
-    if (!formData.location.city.trim()) {
-      newErrors["location.city"] = "Localitatea este obligatorie"
+    if (!formData.location.trim()) {
+      newErrors.location = "Locația este obligatorie"
     }
 
     if (!formData.deadline) {
@@ -200,19 +192,105 @@ const PostRequestPage = () => {
     setIsSubmitting(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Get token from localStorage
+      const token = localStorage.getItem('token')
+      
+      if (!token) {
+        throw new Error('Nu ești autentificat')
+      }
 
-      console.log("Request posted:", formData)
+      // Create FormData object for the API call
+      const requestFormData = new FormData()
+      
+      // Adăugăm toate câmpurile necesare
+      // Convertim valorile la string pentru a evita probleme cu tipurile de date
+      // Verificăm că valorile nu sunt undefined sau null
+      const title = String(formData.title || '').trim()
+      const category = String(formData.category || '').trim()
+      const description = String(formData.description || '').trim()
+      const budget = String(formData.budget || '').trim()
+      const currency = String(formData.currency || 'RON').trim()
+      const location = String(formData.location || '').trim()
+      const deadline = formData.deadline ? formData.deadline.toISOString() : ''
+      
+      // Verificăm că avem toate câmpurile obligatorii
+      if (!title) {
+        setErrors({ ...errors, title: "Titlul este obligatoriu" })
+        setIsSubmitting(false)
+        return
+      }
+      
+      if (!category) {
+        setErrors({ ...errors, category: "Categoria este obligatorie" })
+        setIsSubmitting(false)
+        return
+      }
+      
+      if (!description) {
+        setErrors({ ...errors, description: "Descrierea este obligatorie" })
+        setIsSubmitting(false)
+        return
+      }
+      
+      if (!location) {
+        setErrors({ ...errors, location: "Locația este obligatorie" })
+        setIsSubmitting(false)
+        return
+      }
+      
+      // Adăugăm câmpurile la FormData
+      requestFormData.append('title', title)
+      requestFormData.append('category', category)
+      requestFormData.append('description', description)
+      requestFormData.append('budget', budget)
+      requestFormData.append('currency', currency)
+      requestFormData.append('location', location)
+      requestFormData.append('deadline', deadline)
+      
+      // Adăugăm preferința de contact dacă există
+      if (formData.contactPreference) {
+        requestFormData.append('contactPreference', String(formData.contactPreference).trim())
+      }
+      
+      // Append images - verificăm că fiecare imagine este un obiect File valid
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach((image, index) => {
+          if (image instanceof File) {
+            requestFormData.append('images', image)
+          } else {
+            console.warn(`Skipping invalid image at index ${index}`)
+          }
+        })
+      }
 
-      // Redirect to requests page
-      navigate("/requests")
+      // Afișăm datele trimise pentru debugging
+      console.log("Sending request data:")
+      for (let pair of requestFormData.entries()) {
+        console.log(pair[0] + ': ' + (pair[0] === 'images' ? 'File object' : pair[1]))
+      }
+
+      // Call the API to create the request
+      const response = await createRequest(requestFormData, token)
+      
+      console.log("Request created:", response)
+
+      // Redirect to success page
+      navigate("/success?type=request")
     } catch (error) {
       console.error("Error posting request:", error)
-      setErrors({
-        ...errors,
-        submit: "A apărut o eroare. Te rugăm să încerci din nou.",
-      })
+      
+      // Afișăm un mesaj de eroare mai specific dacă este disponibil
+      if (error.message) {
+        setErrors({
+          ...errors,
+          submit: `Eroare: ${error.message}`,
+        })
+      } else {
+        setErrors({
+          ...errors,
+          submit: "A apărut o eroare. Te rugăm să încerci din nou.",
+        })
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -224,7 +302,7 @@ const PostRequestPage = () => {
         <Link to="/requests" className="back-button">
           <ChevronLeft size={24} />
         </Link>
-        <h1>Adaugă o cerere de servicii</h1>
+        <h1>Adaugă o cerere nouă</h1>
       </header>
 
       <form className="request-form" onSubmit={handleSubmit}>
@@ -264,115 +342,46 @@ const PostRequestPage = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="budgetMin">Buget minim (RON) *</label>
+              <label htmlFor="budget">Buget (RON) *</label>
               <input
                 type="number"
-                id="budgetMin"
-                name="budgetMin"
-                value={formData.budgetMin}
-                onChange={handleChange}
-                placeholder="Ex: 100"
-                min="0"
-                step="1"
-                className={errors.budgetMin ? "error" : ""}
-              />
-              {errors.budgetMin && <div className="error-message">{errors.budgetMin}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="budgetMax">Buget maxim (RON) *</label>
-              <input
-                type="number"
-                id="budgetMax"
-                name="budgetMax"
-                value={formData.budgetMax}
+                id="budget"
+                name="budget"
+                value={formData.budget}
                 onChange={handleChange}
                 placeholder="Ex: 200"
                 min="0"
                 step="1"
-                className={errors.budgetMax ? "error" : ""}
+                className={errors.budget ? "error" : ""}
               />
-              {errors.budgetMax && <div className="error-message">{errors.budgetMax}</div>}
+              {errors.budget && <div className="error-message">{errors.budget}</div>}
             </div>
-          </div>
 
-          <div className="form-group">
-            <label>Locație *</label>
-            <div className="location-fields">
-              <div className="location-field">
-                <label htmlFor="county">Județ *</label>
-                <input
-                  type="text"
-                  id="county"
-                  name="location.county"
-                  value={formData.location.county}
-                  onChange={handleChange}
-                  placeholder="Ex: București"
-                  className={errors["location.county"] ? "error" : ""}
-                />
-                {errors["location.county"] && <div className="error-message">{errors["location.county"]}</div>}
-              </div>
-
-              <div className="location-field">
-                <label htmlFor="city">Localitate *</label>
-                <input
-                  type="text"
-                  id="city"
-                  name="location.city"
-                  value={formData.location.city}
-                  onChange={handleChange}
-                  placeholder="Ex: Sector 1"
-                  className={errors["location.city"] ? "error" : ""}
-                />
-                {errors["location.city"] && <div className="error-message">{errors["location.city"]}</div>}
-              </div>
-
-              <div className="location-field">
-                <label htmlFor="street">Stradă</label>
-                <input
-                  type="text"
-                  id="street"
-                  name="location.street"
-                  value={formData.location.street}
-                  onChange={handleChange}
-                  placeholder="Ex: Strada Victoriei"
-                />
-              </div>
-
-              <div className="location-field">
-                <label htmlFor="number">Număr</label>
-                <input
-                  type="text"
-                  id="number"
-                  name="location.number"
-                  value={formData.location.number}
-                  onChange={handleChange}
-                  placeholder="Ex: 10"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="deadline">Termen limită *</label>
-            <div className="deadline-input">
-              <Calendar size={18} className="deadline-icon" />
-              <select
-                id="deadline"
-                name="deadline"
-                value={formData.deadline}
+            <div className="form-group">
+              <label htmlFor="location">Locație *</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location}
                 onChange={handleChange}
-                className={errors.deadline ? "error" : ""}
-              >
-                <option value="">Selectează termenul limită</option>
-                {DEADLINES.map((deadline) => (
-                  <option key={deadline} value={deadline}>
-                    {deadline}
-                  </option>
-                ))}
-              </select>
+                placeholder="Ex: București, Sector 3"
+                className={errors.location ? "error" : ""}
+              />
+              {errors.location && <div className="error-message">{errors.location}</div>}
             </div>
-            {errors.deadline && <div className="error-message">{errors.deadline}</div>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="deadline">Termen limită</label>
+            <DatePicker
+              selected={formData.deadline}
+              onChange={handleDateChange}
+              dateFormat="dd/MM/yyyy"
+              minDate={new Date()}
+              placeholderText="Selectează o dată"
+              className="date-picker"
+            />
           </div>
 
           <div className="form-group">
@@ -382,7 +391,7 @@ const PostRequestPage = () => {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Descrie în detaliu ce servicii cauți, cerințe specifice, detalii importante, etc."
+              placeholder="Descrie în detaliu ce servicii cauți, ce așteptări ai, etc."
               rows="6"
               className={errors.description ? "error" : ""}
             ></textarea>
@@ -392,7 +401,7 @@ const PostRequestPage = () => {
 
         <div className="form-section">
           <div className="form-group">
-            <label>Imagini (opțional)</label>
+            <label>Imagini</label>
             <div className="image-upload-container">
               <div className="image-upload-area">
                 <input
@@ -449,7 +458,7 @@ const PostRequestPage = () => {
                   checked={formData.contactPreference === "mesaj"}
                   onChange={handleChange}
                 />
-                <span>Doar mesaje</span>
+                <span>Doar mesaj</span>
               </label>
               <label className="contact-option">
                 <input

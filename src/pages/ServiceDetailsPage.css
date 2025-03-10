@@ -785,3 +785,60 @@
   }
 }
 
+/* Loading and error states */
+.loading-container,
+.error-container,
+.service-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  width: 100%;
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-container p,
+.error-container p,
+.service-not-found p {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  max-width: 500px;
+}
+
+.error-container h2,
+.service-not-found h2 {
+  margin-top: 1rem;
+  color: var(--text-primary);
+}
+
+.spinner {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.back-home-button {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.back-home-button:hover {
+  background-color: var(--primary-dark);
+}
+

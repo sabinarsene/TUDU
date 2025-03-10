@@ -485,3 +485,58 @@
   }
 }
 
+/* Loading and error states */
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  width: 100%;
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-container p,
+.error-container p {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+}
+
+.error-container h2 {
+  margin-top: 1rem;
+  color: var(--text-primary);
+}
+
+.spinner {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.retry-button,
+.back-home-button {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover,
+.back-home-button:hover {
+  background-color: var(--primary-dark);
+}
+

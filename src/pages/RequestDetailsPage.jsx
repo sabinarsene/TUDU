@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useParams, useNavigate } from "react-router-dom"
 import {
   ChevronLeft,
@@ -16,187 +16,10 @@ import {
   ChevronRight,
   ChevronDown,
   MessageCircle,
+  Loader,
 } from "lucide-react"
 import "./RequestDetailsPage.css"
-
-// Sample service requests data
-const SAMPLE_REQUESTS = {
-  1: {
-    id: 1,
-    title: "Caut instalator pentru reparație urgentă",
-    category: "Instalații",
-    budget: {
-      min: 100,
-      max: 200,
-      currency: "RON",
-    },
-    location: "București, Sector 3",
-    deadline: "În 2 zile",
-    postedAt: "Acum 3 ore",
-    description: `Am o țeavă spartă în baie care trebuie reparată urgent. Disponibilitate imediată necesară.
-
-    Problema a apărut ieri și am încercat să o repar singur, dar nu am reușit. Apa se scurge constant și am fost nevoit să închid robinetul principal.
-
-    Caut un instalator profesionist care poate veni astăzi sau mâine să rezolve problema. Prefer persoane cu experiență și recenzii bune.
-    
-    Bugetul este negociabil pentru o intervenție rapidă.`,
-    images: ["/placeholder.svg?height=400&width=600", "/placeholder.svg?height=400&width=600"],
-    user: {
-      id: 101,
-      name: "Andreea M.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.7,
-      reviewCount: 8,
-      memberSince: "Martie 2023",
-      responseTime: "sub 1 oră",
-      verified: true,
-    },
-    contactPreference: "orice",
-    similarRequests: [2, 6],
-  },
-  2: {
-    id: 2,
-    title: "Curățenie generală apartament 3 camere",
-    category: "Curățenie",
-    budget: {
-      min: 200,
-      max: 300,
-      currency: "RON",
-    },
-    location: "Cluj-Napoca",
-    deadline: "Săptămâna viitoare",
-    postedAt: "Acum 1 zi",
-    description: "Caut serviciu de curățenie profesională pentru un apartament de 3 camere. Preferabil cu produse eco.",
-    images: ["/placeholder.svg?height=400&width=600"],
-    user: {
-      id: 102,
-      name: "Mihai D.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.9,
-      reviewCount: 12,
-      memberSince: "Ianuarie 2023",
-      responseTime: "sub 2 ore",
-      verified: true,
-    },
-    contactPreference: "mesaj",
-    similarRequests: [1, 3],
-  },
-  3: {
-    id: 3,
-    title: "Montaj mobilă IKEA",
-    category: "Mobilă",
-    budget: {
-      min: 150,
-      max: 250,
-      currency: "RON",
-    },
-    location: "Timișoara",
-    deadline: "În weekend",
-    postedAt: "Acum 2 zile",
-    description:
-      "Am nevoie de ajutor pentru montarea unui dulap și a unei canapele de la IKEA. Persoana trebuie să aibă scule proprii.",
-    images: [
-      "/placeholder.svg?height=400&width=600",
-      "/placeholder.svg?height=400&width=600",
-      "/placeholder.svg?height=400&width=600",
-    ],
-    user: {
-      id: 103,
-      name: "Elena P.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.5,
-      reviewCount: 5,
-      memberSince: "Aprilie 2023",
-      responseTime: "sub 3 ore",
-      verified: false,
-    },
-    contactPreference: "telefon",
-    similarRequests: [2, 6],
-  },
-  4: {
-    id: 4,
-    title: "Profesor de matematică pentru elev clasa a 8-a",
-    category: "Educație",
-    budget: {
-      min: 70,
-      max: 100,
-      currency: "RON/oră",
-    },
-    location: "Online",
-    deadline: "Permanent",
-    postedAt: "Acum 5 zile",
-    description:
-      "Caut profesor pentru meditații la matematică pentru pregătirea examenului de capacitate. 2 ședințe pe săptămână.",
-    images: [],
-    user: {
-      id: 104,
-      name: "Cristian V.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 5.0,
-      reviewCount: 15,
-      memberSince: "Februarie 2023",
-      responseTime: "sub 1 oră",
-      verified: true,
-    },
-    contactPreference: "orice",
-    similarRequests: [5],
-  },
-  5: {
-    id: 5,
-    title: "Transport mobilă la mutare",
-    category: "Transport",
-    budget: {
-      min: 300,
-      max: 500,
-      currency: "RON",
-    },
-    location: "Brașov",
-    deadline: "15 Iulie",
-    postedAt: "Acum 3 zile",
-    description:
-      "Am nevoie de o dubă și ajutor pentru mutarea mobilierului dintr-un apartament cu 2 camere la o distanță de aproximativ 5 km.",
-    images: ["/placeholder.svg?height=400&width=600", "/placeholder.svg?height=400&width=600"],
-    user: {
-      id: 105,
-      name: "Alexandru T.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.6,
-      reviewCount: 9,
-      memberSince: "Decembrie 2022",
-      responseTime: "sub 4 ore",
-      verified: true,
-    },
-    contactPreference: "mesaj",
-    similarRequests: [3, 6],
-  },
-  6: {
-    id: 6,
-    title: "Reparație frigider Samsung",
-    category: "Electrocasnice",
-    budget: {
-      min: 100,
-      max: 300,
-      currency: "RON",
-    },
-    location: "Constanța",
-    deadline: "Cât mai curând",
-    postedAt: "Acum 12 ore",
-    description: "Frigiderul nu mai răcește corespunzător. Model Samsung RB31FDRNDSA. Caut tehnician cu experiență.",
-    images: ["/placeholder.svg?height=400&width=600", "/placeholder.svg?height=400&width=600"],
-    user: {
-      id: 106,
-      name: "Maria N.",
-      image: "/placeholder.svg?height=50&width=50",
-      rating: 4.8,
-      reviewCount: 11,
-      memberSince: "Octombrie 2022",
-      responseTime: "sub 2 ore",
-      verified: false,
-    },
-    contactPreference: "telefon",
-    similarRequests: [1, 5],
-  },
-}
+import { fetchRequestById } from "../services/requestApi"
 
 const RequestDetailsPage = () => {
   const { requestId } = useParams()
@@ -204,13 +27,75 @@ const RequestDetailsPage = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
   const [showFullDescription, setShowFullDescription] = useState(false)
-  const [isApplying, setIsApplying] = useState(false)
-  const [offerMessage, setOfferMessage] = useState("")
+  const [request, setRequest] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [offerPrice, setOfferPrice] = useState("")
+  const [offerDescription, setOfferDescription] = useState("")
   const [offerErrors, setOfferErrors] = useState({})
+  const [isSubmittingOffer, setIsSubmittingOffer] = useState(false)
 
-  // Get request data
-  const request = SAMPLE_REQUESTS[requestId]
+  // Funcție pentru a obține URL-ul complet al imaginii
+  const getImageUrl = (path) => {
+    if (!path) return '/placeholder.svg';
+    
+    // Verificăm dacă este un URL absolut
+    if (path.startsWith('http')) {
+      return path;
+    }
+    
+    // Altfel, construim URL-ul complet
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    return `${API_URL}${path}`;
+  };
+
+  // Funcție pentru a gestiona erorile de încărcare a imaginilor
+  const handleImageError = (e) => {
+    e.target.src = '/placeholder.svg';
+  };
+
+  // Fetch request data when component mounts
+  useEffect(() => {
+    const getRequestDetails = async () => {
+      try {
+        setLoading(true)
+        const data = await fetchRequestById(requestId)
+        setRequest(data)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching request details:", err)
+        setError("Nu am putut încărca detaliile cererii. Vă rugăm încercați din nou mai târziu.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    getRequestDetails()
+  }, [requestId])
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <Loader size={48} className="spinner" />
+        <p>Se încarcă detaliile cererii...</p>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="error-container">
+        <AlertTriangle size={48} />
+        <h2>Eroare</h2>
+        <p>{error}</p>
+        <button onClick={() => navigate("/requests")} className="back-button">
+          Înapoi la cereri
+        </button>
+      </div>
+    )
+  }
 
   // If request not found
   if (!request) {
@@ -219,62 +104,60 @@ const RequestDetailsPage = () => {
         <AlertTriangle size={48} />
         <h2>Cerere negăsită</h2>
         <p>Cererea căutată nu există sau a fost ștearsă.</p>
-        <button onClick={() => navigate("/requests")} className="back-home-button">
+        <button onClick={() => navigate("/requests")} className="back-button">
           Înapoi la cereri
         </button>
       </div>
     )
   }
 
-  // Get similar requests
-  const similarRequests = request.similarRequests ? request.similarRequests.map((id) => SAMPLE_REQUESTS[id]) : []
-
-  // Toggle favorite
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite)
   }
 
-  // Handle image navigation
   const nextImage = () => {
-    if (request.images && request.images.length > 1) {
+    if (request.images && request.images.length > 0) {
       setActiveImageIndex((prev) => (prev === request.images.length - 1 ? 0 : prev + 1))
     }
   }
 
   const prevImage = () => {
-    if (request.images && request.images.length > 1) {
+    if (request.images && request.images.length > 0) {
       setActiveImageIndex((prev) => (prev === 0 ? request.images.length - 1 : prev - 1))
     }
   }
 
-  // Handle offer submission
   const handleSubmitOffer = (e) => {
     e.preventDefault()
-
+    
     // Validate form
     const errors = {}
-    if (!offerMessage.trim()) {
-      errors.message = "Te rugăm să introduci un mesaj"
-    }
-
     if (!offerPrice.trim()) {
-      errors.price = "Te rugăm să introduci un preț"
-    } else if (isNaN(Number.parseFloat(offerPrice)) || Number.parseFloat(offerPrice) <= 0) {
-      errors.price = "Te rugăm să introduci un preț valid"
+      errors.price = "Prețul este obligatoriu"
+    } else if (isNaN(offerPrice) || Number(offerPrice) <= 0) {
+      errors.price = "Prețul trebuie să fie un număr pozitiv"
     }
-
-    if (Object.keys(errors).length > 0) {
-      setOfferErrors(errors)
-      return
+    
+    if (!offerDescription.trim()) {
+      errors.description = "Descrierea este obligatorie"
+    } else if (offerDescription.length < 20) {
+      errors.description = "Descrierea trebuie să aibă cel puțin 20 de caractere"
     }
-
-    // Simulate sending offer
-    setIsApplying(true)
-
-    setTimeout(() => {
-      console.log("Offer submitted:", { message: offerMessage, price: offerPrice })
-      navigate(`/messages/new/${request.user.id}?requestId=${request.id}`)
-    }, 1000)
+    
+    setOfferErrors(errors)
+    
+    if (Object.keys(errors).length === 0) {
+      setIsSubmittingOffer(true)
+      
+      // Here you would submit the offer to the API
+      // For now, we'll just simulate a successful submission
+      setTimeout(() => {
+        alert("Oferta ta a fost trimisă cu succes!")
+        setOfferPrice("")
+        setOfferDescription("")
+        setIsSubmittingOffer(false)
+      }, 1000)
+    }
   }
 
   return (
@@ -296,109 +179,96 @@ const RequestDetailsPage = () => {
         </div>
       </header>
 
-      {request.images && request.images.length > 0 ? (
-        <div className="request-gallery">
-          <div className="gallery-main">
-            <img
-              src={request.images[activeImageIndex] || "/placeholder.svg"}
-              alt={request.title}
-              className="main-image"
-            />
-
-            {request.images.length > 1 && (
-              <>
-                <button className="gallery-nav prev" onClick={prevImage}>
-                  <ChevronLeft size={24} />
-                </button>
-                <button className="gallery-nav next" onClick={nextImage}>
-                  <ChevronRight size={24} />
-                </button>
-
-                <div className="gallery-indicators">
-                  {request.images.map((_, index) => (
-                    <button
-                      key={index}
-                      className={`indicator ${index === activeImageIndex ? "active" : ""}`}
-                      onClick={() => setActiveImageIndex(index)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {request.images.length > 1 && (
-            <div className="gallery-thumbnails">
-              {request.images.map((image, index) => (
-                <button
-                  key={index}
-                  className={`thumbnail ${index === activeImageIndex ? "active" : ""}`}
-                  onClick={() => setActiveImageIndex(index)}
-                >
-                  <img src={image || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="request-no-image">
-          <FileText size={48} />
-          <p>Această cerere nu are imagini atașate</p>
-        </div>
-      )}
-
       <div className="request-content">
         <div className="request-main">
+          {request.images && request.images.length > 0 && (
+            <div className="request-gallery">
+              <div className="gallery-main">
+                <img
+                  src={getImageUrl(request.images[activeImageIndex].image_url)}
+                  alt={request.title}
+                  className="main-image"
+                  onError={handleImageError}
+                />
+
+                {request.images.length > 1 && (
+                  <>
+                    <button className="gallery-nav prev" onClick={prevImage}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button className="gallery-nav next" onClick={nextImage}>
+                      <ChevronRight size={24} />
+                    </button>
+
+                    <div className="gallery-indicators">
+                      {request.images.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`indicator ${index === activeImageIndex ? "active" : ""}`}
+                          onClick={() => setActiveImageIndex(index)}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="request-header-info">
-            <span className="request-category">{request.category}</span>
-            <span className="request-time">{request.postedAt}</span>
-          </div>
-
-          <h1 className="request-title">{request.title}</h1>
-
-          <div className="request-meta">
-            <div className="meta-item">
-              <MapPin size={18} />
-              <span>{request.location}</span>
+            <div className="request-meta-top">
+              <span className="request-category">{request.category}</span>
+              <span className="request-time">{request.postedAt}</span>
             </div>
-            <div className="meta-item">
-              <Clock size={18} />
-              <span>Termen: {request.deadline}</span>
-            </div>
-          </div>
 
-          <div className="request-budget">
-            <DollarSign size={20} />
-            <span className="budget-label">Buget:</span>
-            <span className="budget-amount">
-              {request.budget.min} - {request.budget.max} {request.budget.currency}
-            </span>
+            <h1 className="request-title">{request.title}</h1>
+
+            <div className="request-meta">
+              <div className="meta-item">
+                <MapPin size={16} />
+                <span>{request.location}</span>
+              </div>
+              <div className="meta-item">
+                <Clock size={16} />
+                <span>Termen: {request.deadline}</span>
+              </div>
+              <div className="meta-item">
+                <DollarSign size={16} />
+                <span>
+                  Buget: {request.budget} {request.currency}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="request-description">
             <h2>Descriere</h2>
             <div className={`description-content ${showFullDescription ? "expanded" : ""}`}>
-              {request.description.split("\n\n").map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
+              <p>{request.description}</p>
             </div>
-
-            {request.description.length > 200 && (
-              <button className="show-more-button" onClick={() => setShowFullDescription(!showFullDescription)}>
+            {request.description && request.description.length > 300 && (
+              <button
+                className="show-more-button"
+                onClick={() => setShowFullDescription(!showFullDescription)}
+              >
                 {showFullDescription ? "Arată mai puțin" : "Arată mai mult"}
-                <ChevronDown size={18} className={showFullDescription ? "rotate" : ""} />
+                <ChevronDown size={16} className={showFullDescription ? "rotate" : ""} />
               </button>
             )}
           </div>
 
-          <div className="request-client">
-            <h2>Despre client</h2>
-            <div className="client-card">
-              <Link to={`/profile/${request.user.id}`} className="client-info">
-                <img src={request.user.image || "/placeholder.svg"} alt={request.user.name} className="client-image" />
-                <div className="client-details">
-                  <div className="client-name-wrapper">
+          <div className="request-user-section">
+            <h2>Despre solicitant</h2>
+            <div className="user-card">
+              <div className="user-info">
+                <img
+                  src={getImageUrl(request.user.image)}
+                  alt={request.user.name}
+                  className="user-image"
+                  onError={handleImageError}
+                />
+                <div className="user-details">
+                  <div className="user-name-wrapper">
                     <h3>{request.user.name}</h3>
                     {request.user.verified && (
                       <span className="verified-badge" title="Utilizator verificat">
@@ -406,135 +276,67 @@ const RequestDetailsPage = () => {
                       </span>
                     )}
                   </div>
-                  <div className="client-rating">
+                  <div className="user-rating">
                     <Star size={16} fill="#ffc939" color="#ffc939" />
                     <span>
-                      {request.user.rating} ({request.user.reviewCount} recenzii)
+                      {request.user.rating || "N/A"} ({request.user.reviewCount || 0} recenzii)
                     </span>
                   </div>
-                  <div className="client-meta">
-                    <span>Răspunde {request.user.responseTime}</span>
-                    <span>•</span>
-                    <span>Membru din {request.user.memberSince}</span>
-                  </div>
                 </div>
-              </Link>
-
-              <Link to={`/messages/new/${request.user.id}`} className="contact-button">
+              </div>
+              <Link to={`/messages/${request.user.id}`} className="contact-button">
                 <MessageCircle size={18} />
                 <span>Contactează</span>
               </Link>
-
-              <div className="contact-preference">
-                <h4>Preferință de contact:</h4>
-                <span className="preference-value">
-                  {request.contactPreference === "orice" && "Orice metodă de contact"}
-                  {request.contactPreference === "mesaj" && "Preferă mesaje"}
-                  {request.contactPreference === "telefon" && "Preferă apeluri telefonice"}
-                </span>
-              </div>
             </div>
           </div>
-
-          {similarRequests && similarRequests.length > 0 && (
-            <div className="similar-requests">
-              <h2>Cereri similare</h2>
-              <div className="similar-requests-list">
-                {similarRequests.map((similarRequest) => (
-                  <Link to={`/request/${similarRequest.id}`} key={similarRequest.id} className="similar-request-card">
-                    <div className="similar-request-image">
-                      <img
-                        src={(similarRequest.images && similarRequest.images[0]) || "/placeholder.svg"}
-                        alt={similarRequest.title}
-                      />
-                    </div>
-                    <div className="similar-request-content">
-                      <h3>{similarRequest.title}</h3>
-                      <div className="similar-request-meta">
-                        <div className="similar-request-budget">
-                          {similarRequest.budget.min} - {similarRequest.budget.max} {similarRequest.budget.currency}
-                        </div>
-                        <div className="similar-request-deadline">{similarRequest.deadline}</div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="request-sidebar">
           <div className="offer-card">
-            <h3>Răspunde la această cerere</h3>
-
-            {isApplying ? (
-              <div className="applying-state">
-                <div className="loader"></div>
-                <p>Se trimite oferta ta...</p>
+            <h3>Trimite o ofertă</h3>
+            <form className="offer-form" onSubmit={handleSubmitOffer}>
+              <div className="form-group">
+                <label htmlFor="offerPrice">Prețul tău (RON) *</label>
+                <input
+                  type="number"
+                  id="offerPrice"
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(e.target.value)}
+                  placeholder="Ex: 150"
+                  min="0"
+                  step="1"
+                  className={offerErrors.price ? "error" : ""}
+                />
+                {offerErrors.price && <div className="error-message">{offerErrors.price}</div>}
               </div>
-            ) : (
-              <form onSubmit={handleSubmitOffer} className="offer-form">
-                <div className="form-group">
-                  <label htmlFor="offerMessage">Mesajul tău</label>
-                  <textarea
-                    id="offerMessage"
-                    value={offerMessage}
-                    onChange={(e) => setOfferMessage(e.target.value)}
-                    placeholder="Descrie cum poți ajuta și experiența ta relevantă..."
-                    rows="4"
-                    className={offerErrors.message ? "error" : ""}
-                  ></textarea>
-                  {offerErrors.message && <div className="error-message">{offerErrors.message}</div>}
-                </div>
 
-                <div className="form-group">
-                  <label htmlFor="offerPrice">Prețul tău (RON)</label>
-                  <input
-                    type="number"
-                    id="offerPrice"
-                    value={offerPrice}
-                    onChange={(e) => setOfferPrice(e.target.value)}
-                    placeholder="Introdu prețul tău"
-                    className={offerErrors.price ? "error" : ""}
-                  />
-                  {offerErrors.price && <div className="error-message">{offerErrors.price}</div>}
-                </div>
+              <div className="form-group">
+                <label htmlFor="offerDescription">Descrierea ofertei *</label>
+                <textarea
+                  id="offerDescription"
+                  value={offerDescription}
+                  onChange={(e) => setOfferDescription(e.target.value)}
+                  placeholder="Descrie oferta ta, experiența relevantă, disponibilitatea, etc."
+                  rows="4"
+                  className={offerErrors.description ? "error" : ""}
+                ></textarea>
+                {offerErrors.description && <div className="error-message">{offerErrors.description}</div>}
+              </div>
 
-                <button type="submit" className="submit-offer-button">
-                  Trimite oferta
-                </button>
-              </form>
-            )}
-
-            <div className="offer-note">
-              <p>Prin trimiterea ofertei, vei începe o conversație cu {request.user.name}.</p>
-            </div>
+              <button type="submit" className="submit-offer-button" disabled={isSubmittingOffer}>
+                {isSubmittingOffer ? "Se trimite..." : "Trimite oferta"}
+              </button>
+            </form>
           </div>
 
-          <div className="client-mini-card">
-            <Link to={`/profile/${request.user.id}`} className="client-mini-info">
-              <img
-                src={request.user.image || "/placeholder.svg"}
-                alt={request.user.name}
-                className="client-mini-image"
-              />
-              <div>
-                <div className="client-mini-name">
-                  {request.user.name}
-                  {request.user.verified && (
-                    <span className="verified-mini-badge">
-                      <Check size={12} />
-                    </span>
-                  )}
-                </div>
-                <div className="client-mini-rating">
-                  <Star size={14} fill="#ffc939" color="#ffc939" />
-                  <span>{request.user.rating}</span>
-                </div>
-              </div>
-            </Link>
-            <span className="response-time">Răspunde {request.user.responseTime}</span>
+          <div className="contact-info-card">
+            <h3>Preferință de contact</h3>
+            <div className="contact-preference">
+              {request.contactPreference === "orice" && <p>Orice metodă de contact</p>}
+              {request.contactPreference === "mesaj" && <p>Doar prin mesaje</p>}
+              {request.contactPreference === "telefon" && <p>Doar prin telefon</p>}
+            </div>
           </div>
         </div>
       </div>
