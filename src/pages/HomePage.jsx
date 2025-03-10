@@ -63,6 +63,7 @@ const HomePage = () => {
       try {
         setLoading(true)
         const data = await fetchServices()
+        console.log('Fetched services:', data) // Log fetched services
         setServices(data)
         setError(null)
       } catch (err) {
@@ -276,48 +277,50 @@ const HomePage = () => {
           </div>
         ) : (
           filteredServices.map((service) => (
-            <Link to={`/service/${service.id}`} key={service.id} className="service-card">
-              <div className="service-image-container">
-                <img 
-                  src={getImageUrl(service.image_url)} 
-                  alt={service.title} 
-                  className="service-image"
+            <div key={service.id} className="service-card">
+              <Link to={`/service/${service.id}`} className="service-card-link">
+                <div className="service-image-container">
+                  <img 
+                    src={getImageUrl(service.image_url)} 
+                    alt={service.title} 
+                    className="service-image"
+                    onError={handleImageError}
+                  />
+                  <span className="service-category">{service.category}</span>
+                </div>
+                <div className="service-content">
+                  <h3 className="service-title">{service.title}</h3>
+                  <div className="service-meta">
+                    <div className="service-location">
+                      <MapPin size={16} />
+                      <span>{service.location}</span>
+                    </div>
+                    <div className="service-rating">
+                      <Star size={16} fill="#ffc939" color="#ffc939" />
+                      <span>
+                        {service.rating || "N/A"} ({service.review_count || 0})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+              <div className="service-provider">
+                <img
+                  src={getImageUrl(service.provider_image) || '/placeholder.svg'}
+                  alt="Provider"
+                  className="provider-image"
                   onError={handleImageError}
                 />
-                <span className="service-category">{service.category}</span>
+                <Link to={`/profile/${service.provider_id}`} className="provider-link">
+                  <span className="provider-name">{service.provider_name}</span>
+                </Link>
               </div>
-              <div className="service-content">
-                <h3 className="service-title">{service.title}</h3>
-                <div className="service-meta">
-                  <div className="service-location">
-                    <MapPin size={16} />
-                    <span>{service.location}</span>
-                  </div>
-                  <div className="service-rating">
-                    <Star size={16} fill="#ffc939" color="#ffc939" />
-                    <span>
-                      {service.rating || "N/A"} ({service.review_count || 0})
-                    </span>
-                  </div>
-                </div>
-                <div className="service-provider">
-                  <Link to={`/profile/${service.provider_id}`} className="provider-link">
-                    <img
-                      src={getImageUrl(service.provider_image)}
-                      alt="Provider"
-                      className="provider-image"
-                      onError={handleImageError}
-                    />
-                    <span className="provider-name">{service.provider_name}</span>
-                  </Link>
-                </div>
-                <div className="service-price">
-                  <span className="price-amount">
-                    {service.price} {service.currency}
-                  </span>
-                </div>
+              <div className="service-price">
+                <span className="price-amount">
+                  {service.price} {service.currency}
+                </span>
               </div>
-            </Link>
+            </div>
           ))
         )}
       </main>

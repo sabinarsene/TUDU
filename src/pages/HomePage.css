@@ -108,20 +108,27 @@
 
 /* Îmbunătățim aspectul cardurilor de servicii */
 .service-card {
-  background-color: white;
-  border-radius: 16px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.service-card-link {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   color: inherit;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  text-decoration: none;
 }
 
 .service-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: var(--blue);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .service-image-container {

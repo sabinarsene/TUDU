@@ -209,6 +209,38 @@ router.get('/:id', async (req, res) => {
   }
 })
 
+// Get requests by user ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    const result = await db.query(
+      `SELECT 
+        r.id, 
+        r.title, 
+        r.description, 
+        r.budget, 
+        r.location, 
+        r.deadline,
+        r.category,
+        r.created_at,
+        u.id as requester_id,
+        u.first_name || ' ' || u.last_name as requester_name,
+        u.profile_image as requester_image
+      FROM requests r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.user_id = $1
+      ORDER BY r.created_at DESC`,
+      [userId]
+    );
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching requests by user ID:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Helper function to convert deadline text to timestamp
 function convertDeadlineToTimestamp(deadlineText) {
   console.log('Converting deadline text:', deadlineText);

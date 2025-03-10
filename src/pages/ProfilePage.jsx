@@ -106,6 +106,7 @@ const ProfilePage = () => {
           const requestsResponse = await fetch(`${API_URL}/api/requests/user/${userId}`)
           if (requestsResponse.ok) {
             const requestsData = await requestsResponse.json()
+            console.log('Requests data:', requestsData) // Log requests data
             setRequests(requestsData || [])
           }
         } else if (user) {
@@ -138,6 +139,7 @@ const ProfilePage = () => {
 
           if (requestsResponse.ok) {
             const requestsData = await requestsResponse.json()
+            console.log('Requests data:', requestsData) // Log requests data
             setRequests(requestsData || [])
           }
         }
@@ -564,7 +566,9 @@ const ProfilePage = () => {
                   <div key={request.id} className="request-card">
                     <div className="request-image-container">
                       <img
-                        src={getImageUrl(request.images[0].image_url) || defaultProfileImage}
+                        src={request.images && request.images.length > 0 
+                          ? getImageUrl(request.images[0].image_url) 
+                          : defaultProfileImage}
                         alt={request.title}
                         className="request-image"
                         onError={handleImageError}

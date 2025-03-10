@@ -106,6 +106,37 @@ router.get('/', async (req, res) => {
   }
 })
 
+// Get services by user ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    const result = await db.query(
+      `SELECT 
+        s.id, 
+        s.title, 
+        s.description, 
+        s.price, 
+        s.location, 
+        s.category,
+        s.created_at,
+        u.id as provider_id,
+        u.first_name || ' ' || u.last_name as provider_name,
+        u.profile_image as provider_image
+      FROM services s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.user_id = $1
+      ORDER BY s.created_at DESC`,
+      [userId]
+    );
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching services by user ID:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get service by ID with provider information and images
 router.get('/:id', async (req, res) => {
   try {
