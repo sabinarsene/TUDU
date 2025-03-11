@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Filter, MapPin, Clock, MessageCircle, Plus, Check, ChevronDown, Loader, AlertTriangle, Star } from "lucide-react"
+import { Filter, MapPin, Clock, Plus, Check, ChevronDown, Loader, AlertTriangle, Star } from "lucide-react"
 import "./RequestsPage.css"
 import Header from "../components/Header"
 import { fetchRequests } from "../services/requestApi"
+import { getImageUrl, handleImageError } from "../utils/imageUtils"
 
 // Categoriile principale care vor fi afișate mereu
 const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Transport", "Educație"]
@@ -55,30 +56,6 @@ const RequestsPage = () => {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
-  // Funcție pentru a obține URL-ul complet al imaginii
-  const getImageUrl = (path) => {
-    if (!path) return '/placeholder.svg';
-    
-    // Verificăm dacă este un URL absolut
-    if (path.startsWith('http')) {
-      return path;
-    }
-    
-    // Verificăm dacă path începe cu '/'
-    if (!path.startsWith('/')) {
-      path = '/' + path;
-    }
-    
-    // Altfel, construim URL-ul complet
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    return `${API_URL}${path}`;
-  };
-
-  // Funcție pentru a gestiona erorile de încărcare a imaginilor
-  const handleImageError = (e) => {
-    e.target.src = '/placeholder.svg';
-  };
 
   // Fetch requests from API when component mounts
   useEffect(() => {

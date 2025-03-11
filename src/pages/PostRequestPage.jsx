@@ -2,9 +2,7 @@
 
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { ChevronLeft, Upload, X, Info, Calendar } from "lucide-react"
-import DatePicker from "react-datepicker"
-import "react-datepicker/dist/react-datepicker.css"
+import { ChevronLeft, Upload, X, Info } from "lucide-react"
 import "./PostRequestPage.css"
 import { createRequest } from "../services/requestApi"
 import { useAuth } from "../contexts/AuthContext"
@@ -28,14 +26,13 @@ const CATEGORIES = [
   "Evenimente",
 ]
 
-const DEADLINES = [
-  "Urgent (24h)",
-  "În 2-3 zile",
-  "Această săptămână",
-  "Săptămâna viitoare",
-  "În 2 săptămâni",
-  "În această lună",
-  "Flexibil",
+// Define deadlines options for the dropdown
+const deadlineOptions = [
+  { value: "1_day", label: "1 zi" },
+  { value: "3_days", label: "3 zile" },
+  { value: "1_week", label: "1 săptămână" },
+  { value: "2_weeks", label: "2 săptămâni" },
+  { value: "1_month", label: "1 lună" },
 ]
 
 const PostRequestPage = () => {
@@ -53,7 +50,7 @@ const PostRequestPage = () => {
     budget: "",
     currency: "RON",
     location: "",
-    deadline: null,
+    deadline: "",
     description: "",
     images: [],
     contactPreference: "orice",
@@ -78,13 +75,6 @@ const PostRequestPage = () => {
         [name]: null,
       })
     }
-  }
-
-  const handleDateChange = (date) => {
-    setFormData({
-      ...formData,
-      deadline: date,
-    })
   }
 
   const handleImageChange = (e) => {
@@ -209,14 +199,38 @@ const PostRequestPage = () => {
       requestFormData.append('currency', formData.currency)
       requestFormData.append('location', formData.location)
       
-      if (formData.deadline) {
-        requestFormData.append('deadline', formData.deadline.toISOString())
+      // Convert deadline string to actual date
+      let deadlineDate = null
+      if (formData.deadline && formData.deadline !== "") {
+        const now = new Date()
+        deadlineDate = new Date(now)
+        
+        switch(formData.deadline) {
+          case '1_day':
+            deadlineDate.setDate(now.getDate() + 1)
+            break
+          case '3_days':
+            deadlineDate.setDate(now.getDate() + 3)
+            break
+          case '1_week':
+            deadlineDate.setDate(now.getDate() + 7)
+            break
+          case '2_weeks':
+            deadlineDate.setDate(now.getDate() + 14)
+            break
+          case '1_month':
+            deadlineDate.setMonth(now.getMonth() + 1)
+            break
+          default:
+            deadlineDate = null
+        }
+        
+        if (deadlineDate) {
+          requestFormData.append('deadline', deadlineDate.toISOString())
+        }
       }
       
       requestFormData.append('contactPreference', formData.contactPreference)
-      
-      // Nu mai încărcăm imaginile în această versiune
-      // Vom implementa încărcarea imaginilor după ce rezolvăm problema cu Supabase
 
       // Afișăm datele trimise pentru debugging
       console.log("Sending request data:")
@@ -226,7 +240,7 @@ const PostRequestPage = () => {
       console.log("budget:", formData.budget)
       console.log("currency:", formData.currency)
       console.log("location:", formData.location)
-      console.log("deadline:", formData.deadline ? formData.deadline.toISOString() : null)
+      console.log("deadline:", deadlineDate ? deadlineDate.toISOString() : null)
       console.log("contactPreference:", formData.contactPreference)
 
       try {
@@ -364,14 +378,20 @@ const PostRequestPage = () => {
 
           <div className="form-group">
             <label htmlFor="deadline">Termen limită</label>
-            <DatePicker
-              selected={formData.deadline}
-              onChange={handleDateChange}
-              dateFormat="dd/MM/yyyy"
-              minDate={new Date()}
-              placeholderText="Selectează o dată"
-              className="date-picker"
-            />
+            <select 
+              name="deadline" 
+              value={formData.deadline} 
+              onChange={handleChange}
+              className="form-select"
+              required
+            >
+              <option value="">Selectează termenul</option>
+              {deadlineOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">
@@ -385,7 +405,7 @@ const PostRequestPage = () => {
               rows="6"
               className={errors.description ? "error" : ""}
             ></textarea>
-            {errors.description && <div className="error-message">{errors.description}</div>}
+            {errors.description && <span className="error-message">{errors.description}</span>}
           </div>
         </div>
 

@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ChevronLeft, Star, Settings, Edit, MapPin, Calendar, MessageCircle, Clock, CheckCircle, Briefcase, LogOut, Loader, AlertTriangle, Trash2 } from "lucide-react"
+import { Star, Settings, Edit, MapPin, Calendar, MessageCircle, Loader, AlertTriangle, Trash2, LogOut, Briefcase } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import "./ProfilePage.css"
-import { fetchServices, deleteService } from "../services/serviceApi"
+import { deleteService } from "../services/serviceApi"
 import { FaMapMarkerAlt, FaClock, FaEye } from 'react-icons/fa'
 import defaultProfileImage from '../assets/default-profile.jpg'
+import UserRating from "../components/UserRating"
+import { getImageUrl, handleImageError } from "../utils/imageUtils"
+import { getFavoriteServices, getFavoriteRequests } from "../services/favoriteApi"
 
 const ProfilePage = () => {
   const { user, logoutUser, loginUser } = useAuth()
@@ -15,8 +18,6 @@ const ProfilePage = () => {
   const { userId } = useParams()
   const [activeTab, setActiveTab] = useState("services")
   const [services, setServices] = useState([])
-  const [bookedServices, setBookedServices] = useState([])
-  const [reviews, setReviews] = useState([])
   const [isUploading, setIsUploading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -37,32 +38,11 @@ const ProfilePage = () => {
   const [saveError, setSaveError] = useState(null)
   const isOwnProfile = !userId || (user && userId === user.id)
   const [requests, setRequests] = useState([])
+  const [favoriteServices, setFavoriteServices] = useState([])
+  const [favoriteRequests, setFavoriteRequests] = useState([])
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState(null)
   const [deletingServiceId, setDeletingServiceId] = useState(null)
-
-  const getImageUrl = (path) => {
-    if (!path) return '/placeholder.svg';
-    
-    // Verificăm dacă este un URL temporar (blob:)
-    if (path.startsWith('blob:')) {
-      return path;
-    }
-    
-    // Verificăm dacă este un URL absolut
-    if (path.startsWith('http')) {
-      return path;
-    }
-    
-    // Verificăm dacă path începe cu '/'
-    if (!path.startsWith('/')) {
-      path = '/' + path;
-    }
-    
-    // Altfel, construim URL-ul complet
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    return `${API_URL}${path}`;
-  };
 
   const formatMemberDate = (date) => {
     if (!date) return 'Dată necunoscută';
@@ -82,10 +62,6 @@ const ProfilePage = () => {
     }
   };
 
-  const handleImageError = (e) => {
-    e.target.src = '/placeholder.svg'
-  }
-
   // Fetch profile data when component mounts
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -93,26 +69,26 @@ const ProfilePage = () => {
         setLoading(true)
         if (userId) {
           // Fetch other user's profile
-          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
-          const response = await fetch(`${API_URL}/api/profile/${userId}`)
+          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
+          const response = await fetch(`${API_URL}/profile/${userId}`)
           
           if (!response.ok) {
             throw new Error('Failed to fetch profile')
           }
           
           const data = await response.json()
-          console.log('Profile data:', data) // Log profile data
+          console.log('Profile data:', data)
           setProfileUser(data)
           setServices(data.services || [])
 
           // Fetch user's requests
-          const requestsResponse = await fetch(`${API_URL}/api/requests/user/${userId}`)
+          const requestsResponse = await fetch(`${API_URL}/requests/user/${userId}`)
           if (requestsResponse.ok) {
             const requestsData = await requestsResponse.json()
-            console.log('Requests data:', requestsData) // Log requests data
+            console.log('Requests data:', requestsData)
             setRequests(requestsData || [])
           }
-        } else if (user) {
+        } else {
           // Set current user's profile
           setProfileUser(user)
           setProfileData({
@@ -128,22 +104,42 @@ const ProfilePage = () => {
           })
 
           // Fetch current user's services and requests
-          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
           const [servicesResponse, requestsResponse] = await Promise.all([
-            fetch(`${API_URL}/api/services/user/${user.id}`),
-            fetch(`${API_URL}/api/requests/user/${user.id}`)
+            fetch(`${API_URL}/services/user/${user.id}`),
+            fetch(`${API_URL}/requests/user/${user.id}`)
           ])
 
           if (servicesResponse.ok) {
             const servicesData = await servicesResponse.json()
-            console.log('Services data:', servicesData) // Log services data
+            console.log('Services data:', servicesData)
             setServices(servicesData || [])
           }
 
           if (requestsResponse.ok) {
             const requestsData = await requestsResponse.json()
-            console.log('Requests data:', requestsData) // Log requests data
+            console.log('Requests data:', requestsData)
             setRequests(requestsData || [])
+          }
+          
+          // Fetch favorite services and requests if it's the user's own profile
+          if (isOwnProfile) {
+            setIsLoadingFavorites(true)
+            try {
+              const token = localStorage.getItem('token')
+              const [favoriteServices, favoriteRequests] = await Promise.all([
+                getFavoriteServices(token),
+                getFavoriteRequests(token)
+              ])
+              console.log('Favorite services:', favoriteServices)
+              console.log('Favorite requests:', favoriteRequests)
+              setFavoriteServices(favoriteServices || [])
+              setFavoriteRequests(favoriteRequests || [])
+            } catch (error) {
+              console.error('Error fetching favorites:', error)
+            } finally {
+              setIsLoadingFavorites(false)
+            }
           }
         }
       } catch (err) {
@@ -155,7 +151,7 @@ const ProfilePage = () => {
     }
 
     fetchProfileData()
-  }, [userId, user])
+  }, [userId, user, isOwnProfile])
 
   const handleSignOut = () => {
     logoutUser()
@@ -182,28 +178,37 @@ const ProfilePage = () => {
       return
     }
 
+    let tempImageUrl = null;
+    
     try {
       setIsUploading(true)
+      setError(null)
       
       // Creăm un URL temporar pentru previzualizare
-      const tempImageUrl = URL.createObjectURL(file)
+      tempImageUrl = URL.createObjectURL(file)
       
-      // Actualizăm temporar imaginea de profil pentru feedback vizual imediat
-      // Dar nu o salvăm în localStorage până nu primim confirmarea de la server
-      const tempUser = { ...user }
-      tempUser.profileImage = tempImageUrl
-      // Nu apelăm loginUser aici pentru a nu salva URL-ul temporar în localStorage
+      console.log('Pregătire încărcare imagine:', {
+        nume: file.name,
+        tip: file.type,
+        dimensiune: `${(file.size / 1024).toFixed(2)} KB`
+      });
       
       const formData = new FormData()
       formData.append('image', file)
 
       // Folosim URL-ul corect pentru API
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
-      const apiEndpoint = `${API_URL}/api/profile/upload-image`
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
+      const apiEndpoint = `${API_URL}/profile/upload-image`
       
       console.log('API URL pentru încărcare imagine:', apiEndpoint)
 
       const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Nu ești autentificat. Te rugăm să te autentifici din nou.')
+      }
+      
+      console.log('Trimit cerere către server...');
+      
       // Eliminăm header-ul Content-Type pentru că FormData îl va seta automat cu boundary corect
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -213,28 +218,50 @@ const ProfilePage = () => {
         body: formData
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Server error:', errorData)
-        throw new Error(errorData.message || 'Încărcarea imaginii a eșuat')
+      console.log('Răspuns primit de la server:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+        console.log('Răspuns JSON:', data);
+      } else {
+        const text = await response.text();
+        console.error('Răspuns non-JSON:', text);
+        throw new Error('Răspuns neașteptat de la server');
       }
 
-      const data = await response.json()
+      if (!response.ok) {
+        console.error('Eroare server:', data);
+        throw new Error(data.message || data.error || 'Încărcarea imaginii a eșuat');
+      }
+      
+      if (!data.user || !data.user.profileImage) {
+        console.error('Răspuns invalid:', data);
+        throw new Error('Răspunsul serverului nu conține datele necesare');
+      }
       
       // Actualizăm utilizatorul cu noua imagine de profil primită de la server
-      const updatedUser = { ...user, profileImage: data.user.profileImage }
-      loginUser(updatedUser)
-      
-      // Revocăm URL-ul temporar pentru a elibera memoria
-      URL.revokeObjectURL(tempImageUrl)
+      const updatedUser = { ...user, profileImage: data.user.profileImage };
+      loginUser(updatedUser);
       
       // Afișăm un mesaj de succes
-      alert('Imaginea de profil a fost actualizată cu succes!')
+      alert('Imaginea de profil a fost actualizată cu succes!');
+
     } catch (error) {
-      console.error('Error uploading image:', error)
-      alert(`Eroare la încărcarea imaginii: ${error.message || 'Te rugăm să încerci din nou.'}`)
+      console.error('Error uploading image:', error);
+      alert(`Eroare la încărcarea imaginii: ${error.message}`);
+      setError(`Eroare la încărcarea imaginii: ${error.message}`);
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
+      
+      // Revocăm URL-ul temporar pentru a elibera memoria
+      if (tempImageUrl) {
+        URL.revokeObjectURL(tempImageUrl);
+      }
     }
   }
 
@@ -252,10 +279,10 @@ const ProfilePage = () => {
     setSaveError(null)
 
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
       const token = localStorage.getItem('token')
       
-      const response = await fetch(`${API_URL}/api/profile`, {
+      const response = await fetch(`${API_URL}/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -288,7 +315,6 @@ const ProfilePage = () => {
     try {
       setIsDeleting(true);
       setDeletingServiceId(serviceId);
-      setDeleteError(null);
       
       const token = localStorage.getItem('token');
       if (!token) {
@@ -305,7 +331,6 @@ const ProfilePage = () => {
       
     } catch (error) {
       console.error('Error deleting service:', error);
-      setDeleteError('Nu am putut șterge serviciul. Te rugăm să încerci din nou.');
       alert('A apărut o eroare la ștergerea serviciului. Te rugăm să încerci din nou.');
     } finally {
       setIsDeleting(false);
@@ -445,30 +470,31 @@ const ProfilePage = () => {
           <MessageCircle size={20} />
           <span>Cereri</span>
         </button>
+        {!isOwnProfile && (
+          <button
+            className={activeTab === "ratings" ? "active" : ""}
+            onClick={() => setActiveTab("ratings")}
+          >
+            Evaluări
+          </button>
+        )}
         {isOwnProfile && (
-          <>
-            <button
-              className={`tab-button ${activeTab === "bookings" ? "active" : ""}`}
-              onClick={() => setActiveTab("bookings")}
-            >
-              <CheckCircle size={20} />
-              <span>Rezervări</span>
-            </button>
-            <button
-              className={`tab-button ${activeTab === "reviews" ? "active" : ""}`}
-              onClick={() => setActiveTab("reviews")}
-            >
-              <Star size={20} />
-              <span>Recenzii</span>
-            </button>
-            <button
-              className={`tab-button ${activeTab === "profile" ? "active" : ""}`}
-              onClick={() => setActiveTab("profile")}
-            >
-              <Settings size={20} />
-              <span>Editare Profil</span>
-            </button>
-          </>
+          <button
+            className={`tab-button ${activeTab === "settings" ? "active" : ""}`}
+            onClick={() => setActiveTab("settings")}
+          >
+            <Settings size={20} />
+            <span>Setări</span>
+          </button>
+        )}
+        {isOwnProfile && (
+          <button
+            className={`tab-button ${activeTab === "favorites" ? "active" : ""}`}
+            onClick={() => setActiveTab("favorites")}
+          >
+            <Star size={20} />
+            <span>Favorite</span>
+          </button>
         )}
       </div>
 
@@ -512,7 +538,7 @@ const ProfilePage = () => {
                   <div key={service.id} className="service-card">
                     <div className="service-image-container">
                       <img
-                        src={getImageUrl(service.image_url) || defaultProfileImage}
+                        src={getImageUrl(service.image)}
                         alt={service.title}
                         className="service-image"
                         onError={handleImageError}
@@ -520,7 +546,9 @@ const ProfilePage = () => {
                       <span className="service-category">{service.category}</span>
                     </div>
                     <div className="service-content">
-                      <h3 className="service-title">{service.title}</h3>
+                      <Link to={`/services/${service.id}`} className="service-title-link">
+                        <h3 className="service-title">{service.title}</h3>
+                      </Link>
                       <div className="service-meta">
                         <div className="service-location">
                           <FaMapMarkerAlt />
@@ -533,26 +561,36 @@ const ProfilePage = () => {
                           </span>
                         </div>
                       </div>
+                      {service.provider && (
+                        <div className="service-provider">
+                          <img
+                            src={getImageUrl(service.provider.image)}
+                            alt={service.provider.name}
+                            className="provider-image"
+                            onError={handleImageError}
+                          />
+                          <Link to={`/profile/${service.provider.id}`} className="provider-name">
+                            {service.provider.name}
+                          </Link>
+                        </div>
+                      )}
                       <div className="service-price">
                         <span className="price-amount">
                           {service.price} {service.currency}
                         </span>
                       </div>
                       <div className="service-actions">
-                        <Link to={`/service/${service.id}`} className="view-button">
+                        <Link to={`/services/${service.id}`} className="view-button">
                           <FaEye /> Vezi detalii
                         </Link>
                         {isOwnProfile && (
                           <>
                             <Link to={`/edit-service/${service.id}`} className="edit-button">
-                              <Edit size={16} />
+                              <Edit size={16} /> Editează
                             </Link>
-                            <button 
+                            <button
                               className="delete-button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleDeleteService(service.id);
-                              }}
+                              onClick={() => handleDeleteService(service.id)}
                               disabled={isDeleting && deletingServiceId === service.id}
                             >
                               {isDeleting && deletingServiceId === service.id ? (
@@ -560,6 +598,7 @@ const ProfilePage = () => {
                               ) : (
                                 <Trash2 size={16} />
                               )}
+                              Șterge
                             </button>
                           </>
                         )}
@@ -638,8 +677,8 @@ const ProfilePage = () => {
                         </span>
                       </div>
                       <div className="request-actions">
-                        <Link to={`/request/${request.id}`} className="view-button">
-                          <FaEye /> Vezi detalii
+                        <Link to={`/requests/${request.id}`} className="view-request-button">
+                          <FaEye /> Vezi cererea
                         </Link>
                         {isOwnProfile && (
                           <Link to={`/edit-request/${request.id}`} className="edit-button">
@@ -655,29 +694,14 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {activeTab === "bookings" && (
-          <div className="bookings-section">
-            <div className="section-header">
-              <h2>Rezervările mele</h2>
-            </div>
-            <div className="empty-state">
-              <p>Nu ai nicio rezervare activă.</p>
-            </div>
+        {activeTab === "ratings" && !isOwnProfile && (
+          <div className="ratings-tab">
+            <h2>Evaluări pentru {profileUser.firstName} {profileUser.lastName}</h2>
+            <UserRating userId={userId} />
           </div>
         )}
 
-        {activeTab === "reviews" && (
-          <div className="reviews-section">
-            <div className="section-header">
-              <h2>Recenziile mele</h2>
-            </div>
-            <div className="empty-state">
-              <p>Nu ai nicio recenzie încă.</p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "profile" && isOwnProfile && (
+        {activeTab === "settings" && isOwnProfile && (
           <div className="profile-edit-section">
             <div className="section-header">
               <h2>Editare Profil</h2>
@@ -814,6 +838,83 @@ const ProfilePage = () => {
                 )}
               </button>
             </form>
+          </div>
+        )}
+
+        {activeTab === "favorites" && isOwnProfile && (
+          <div className="favorites-section">
+            <div className="section-header">
+              <h2>Servicii favorite</h2>
+            </div>
+            {isLoadingFavorites ? (
+              <div className="loading-container">
+                <Loader size={48} className="spinner" />
+                <p>Se încarcă favoritele...</p>
+              </div>
+            ) : favoriteServices.length > 0 ? (
+              <div className="services-grid">
+                {favoriteServices.map((service) => (
+                  <div key={service.id} className="service-card">
+                    <div className="service-image">
+                      <img 
+                        src={getImageUrl(service.image)} 
+                        alt={service.title || 'Service image'} 
+                        onError={handleImageError} 
+                      />
+                    </div>
+                    <div className="service-info">
+                      <h3>{service.title}</h3>
+                      {service.description && (
+                        <p className="service-description">{service.description}</p>
+                      )}
+                      <div className="service-details">
+                        {service.location && (
+                          <span><FaMapMarkerAlt /> {service.location}</span>
+                        )}
+                        {service.availability && (
+                          <span><FaClock /> {service.availability}</span>
+                        )}
+                      </div>
+                      <Link to={`/services/${service.id}`} className="view-service-button">
+                        <FaEye /> Vezi serviciul
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-content">Nu ai niciun serviciu favorit momentan.</p>
+            )}
+
+            <div className="section-header">
+              <h2>Cereri favorite</h2>
+            </div>
+            {isLoadingFavorites ? (
+              <div className="loading-container">
+                <Loader size={48} className="spinner" />
+                <p>Se încarcă favoritele...</p>
+              </div>
+            ) : favoriteRequests.length > 0 ? (
+              <div className="requests-grid">
+                {favoriteRequests.map((request) => (
+                  <div key={request.id} className="request-card">
+                    <div className="request-info">
+                      <h3>{request.title}</h3>
+                      <p className="request-description">{request.description}</p>
+                      <div className="request-details">
+                        <span><FaMapMarkerAlt /> {request.location}</span>
+                        <span><FaClock /> {request.deadline}</span>
+                      </div>
+                      <Link to={`/requests/${request.id}`} className="view-request-button">
+                        <FaEye /> Vezi cererea
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-content">Nu ai nicio cerere favorită momentan.</p>
+            )}
           </div>
         )}
 

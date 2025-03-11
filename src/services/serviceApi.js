@@ -164,4 +164,57 @@ export const deleteService = async (id, token) => {
     console.error(`Error deleting service with ID ${id}:`, error);
     throw error;
   }
+};
+
+/**
+ * Submit a rating for a user
+ * @param {string} userId - ID of the user being rated
+ * @param {number} rating - Rating value (1-5)
+ * @param {string} comment - Optional comment with the rating
+ * @param {string} token - Authentication token
+ * @returns {Promise<Object>} Response with the updated rating information
+ */
+export const submitUserRating = async (userId, rating, comment, token) => {
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}/ratings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        rating,
+        comment
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error submitting rating: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`Error submitting rating for user ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch ratings for a user
+ * @param {string} userId - ID of the user
+ * @returns {Promise<Array>} Array of ratings
+ */
+export const fetchUserRatings = async (userId) => {
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}/ratings`);
+    
+    if (!response.ok) {
+      throw new Error(`Error fetching ratings: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching ratings for user ${userId}:`, error);
+    throw error;
+  }
 }; 

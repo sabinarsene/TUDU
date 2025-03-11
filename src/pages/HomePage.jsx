@@ -7,6 +7,7 @@ import "./HomePage.css"
 import Header from "../components/Header"
 import { fetchServices } from "../services/serviceApi"
 import { Loader } from "lucide-react"
+import { getImageUrl, handleImageError } from "../utils/imageUtils"
 
 // Categoriile principale care vor fi afișate mereu
 const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Transport", "Educație"]
@@ -119,25 +120,6 @@ const HomePage = () => {
       location: "",
     })
   }
-
-  // Funcție pentru a obține URL-ul complet al imaginii
-  const getImageUrl = (path) => {
-    if (!path) return '/placeholder.svg';
-    
-    // Verificăm dacă este un URL absolut
-    if (path.startsWith('http')) {
-      return path;
-    }
-    
-    // Altfel, construim URL-ul complet
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    return `${API_URL}${path}`;
-  };
-
-  // Funcție pentru a gestiona erorile de încărcare a imaginilor
-  const handleImageError = (e) => {
-    e.target.src = '/placeholder.svg';
-  };
 
   return (
     <div className="home-page">
@@ -278,47 +260,47 @@ const HomePage = () => {
         ) : (
           filteredServices.map((service) => (
             <div key={service.id} className="service-card">
-              <Link to={`/service/${service.id}`} className="service-card-link">
-                <div className="service-image-container">
-                  <img 
-                    src={getImageUrl(service.image_url)} 
-                    alt={service.title} 
-                    className="service-image"
-                    onError={handleImageError}
-                  />
-                  <span className="service-category">{service.category}</span>
-                </div>
-                <div className="service-content">
-                  <h3 className="service-title">{service.title}</h3>
-                  <div className="service-meta">
-                    <div className="service-location">
-                      <MapPin size={16} />
-                      <span>{service.location}</span>
-                    </div>
-                    <div className="service-rating">
-                      <Star size={16} fill="#ffc939" color="#ffc939" />
-                      <span>
-                        {service.rating || "N/A"} ({service.review_count || 0})
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-              <div className="service-provider">
-                <img
-                  src={getImageUrl(service.provider_image) || '/placeholder.svg'}
-                  alt="Provider"
-                  className="provider-image"
+              <div className="service-image-container">
+                <img 
+                  src={getImageUrl(service.image)} 
+                  alt={service.title} 
+                  className="service-image"
                   onError={handleImageError}
                 />
-                <Link to={`/profile/${service.provider_id}`} className="provider-link">
-                  <span className="provider-name">{service.provider_name}</span>
-                </Link>
+                <span className="service-category">{service.category}</span>
               </div>
-              <div className="service-price">
-                <span className="price-amount">
-                  {service.price} {service.currency}
-                </span>
+              <div className="service-content">
+                <Link to={`/services/${service.id}`} className="service-title-link">
+                  <h3 className="service-title">{service.title}</h3>
+                </Link>
+                <div className="service-meta">
+                  <div className="service-location">
+                    <MapPin size={16} />
+                    <span>{service.location}</span>
+                  </div>
+                  <div className="service-rating">
+                    <Star size={16} fill="#ffc939" color="#ffc939" />
+                    <span>
+                      {service.rating || "N/A"} ({service.review_count || 0})
+                    </span>
+                  </div>
+                </div>
+                <div className="service-provider">
+                  <img
+                    src={getImageUrl(service.provider?.image)}
+                    alt={service.provider?.name}
+                    className="provider-image"
+                    onError={handleImageError}
+                  />
+                  <Link to={`/profile/${service.provider?.id}`} className="provider-name">
+                    {service.provider?.name}
+                  </Link>
+                </div>
+                <div className="service-price">
+                  <span className="price-amount">
+                    {service.price} {service.currency}
+                  </span>
+                </div>
               </div>
             </div>
           ))

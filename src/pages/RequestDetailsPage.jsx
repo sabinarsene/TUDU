@@ -11,21 +11,25 @@ import {
   Heart,
   AlertTriangle,
   Check,
-  FileText,
-  DollarSign,
   ChevronRight,
   ChevronDown,
   MessageCircle,
   Loader,
+  DollarSign,
 } from "lucide-react"
 import "./RequestDetailsPage.css"
 import { fetchRequestById } from "../services/requestApi"
+import { useAuth } from "../contexts/AuthContext"
+import { addRequestToFavorites, removeRequestFromFavorites, isRequestFavorited } from "../services/favoriteApi"
+import { getImageUrl, handleImageError } from "../utils/imageUtils"
 
 const RequestDetailsPage = () => {
   const { requestId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [request, setRequest] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -35,26 +39,7 @@ const RequestDetailsPage = () => {
   const [offerErrors, setOfferErrors] = useState({})
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false)
 
-  // Funcție pentru a obține URL-ul complet al imaginii
-  const getImageUrl = (path) => {
-    if (!path) return '/placeholder.svg';
-    
-    // Verificăm dacă este un URL absolut
-    if (path.startsWith('http')) {
-      return path;
-    }
-    
-    // Altfel, construim URL-ul complet
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    return `${API_URL}${path}`;
-  };
-
-  // Funcție pentru a gestiona erorile de încărcare a imaginilor
-  const handleImageError = (e) => {
-    e.target.src = '/placeholder.svg';
-  };
-
-  // Fetch request data when component mounts
+  // Fetch request data and favorite status when component mounts
   useEffect(() => {
     const getRequestDetails = async () => {
       try {
@@ -62,6 +47,18 @@ const RequestDetailsPage = () => {
         const data = await fetchRequestById(requestId)
         setRequest(data)
         setError(null)
+
+        // Check if request is favorited
+        if (user) {
+          try {
+            const token = localStorage.getItem('token')
+            const favorited = await isRequestFavorited(requestId, token)
+            setIsFavorite(favorited)
+          } catch (favoriteError) {
+            console.error("Error checking favorite status:", favoriteError)
+            // Don't set the main error, just log it
+          }
+        }
       } catch (err) {
         console.error("Error fetching request details:", err)
         setError("Nu am putut încărca detaliile cererii. Vă rugăm încercați din nou mai târziu.")
@@ -71,7 +68,33 @@ const RequestDetailsPage = () => {
     }
 
     getRequestDetails()
-  }, [requestId])
+  }, [requestId, user])
+
+  // Toggle favorite
+  const toggleFavorite = async () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+
+    try {
+      setIsTogglingFavorite(true)
+      const token = localStorage.getItem('token')
+      
+      if (isFavorite) {
+        await removeRequestFromFavorites(requestId, token)
+      } else {
+        await addRequestToFavorites(requestId, token)
+      }
+      
+      setIsFavorite(!isFavorite)
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+      alert('A apărut o eroare. Te rugăm să încerci din nou.')
+    } finally {
+      setIsTogglingFavorite(false)
+    }
+  }
 
   // Show loading state
   if (loading) {
@@ -109,10 +132,6 @@ const RequestDetailsPage = () => {
         </button>
       </div>
     )
-  }
-
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite)
   }
 
   const nextImage = () => {
@@ -173,8 +192,16 @@ const RequestDetailsPage = () => {
           >
             <Share2 size={20} />
           </button>
-          <button className={`action-button ${isFavorite ? "favorite" : ""}`} onClick={toggleFavorite}>
-            <Heart size={20} fill={isFavorite ? "#ff1d68" : "none"} />
+          <button 
+            className={`action-button ${isFavorite ? "favorite" : ""}`} 
+            onClick={toggleFavorite}
+            disabled={isTogglingFavorite}
+          >
+            {isTogglingFavorite ? (
+              <Loader size={20} className="animate-spin" />
+            ) : (
+              <Heart size={20} fill={isFavorite ? "#ff1d68" : "none"} />
+            )}
           </button>
         </div>
       </header>

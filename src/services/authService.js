@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const AUTH_ENDPOINT = `${API_URL}/api/auth`;
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const AUTH_ENDPOINT = `${API_URL}/auth`;
 
 // Setarea token-ului în header-ul de autorizare
 const setAuthToken = (token) => {

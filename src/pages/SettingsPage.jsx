@@ -38,8 +38,22 @@ const SettingsPage = () => {
       return "/placeholder.svg"
     }
     
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
-    return `${API_URL}${user.profileImage}`
+    // Verificăm dacă este un URL temporar (blob:)
+    if (user.profileImage.startsWith('blob:')) {
+      return user.profileImage;
+    }
+    
+    // Verificăm dacă este un URL absolut
+    if (user.profileImage.startsWith('http')) {
+      return user.profileImage;
+    }
+    
+    // Verificăm dacă path începe cu '/'
+    const path = user.profileImage.startsWith('/') ? user.profileImage : '/' + user.profileImage;
+    
+    // Altfel, construim URL-ul complet
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    return `${API_URL}${path}`;
   }
 
   // Funcție pentru a gestiona erorile de încărcare a imaginii
@@ -90,15 +104,19 @@ const SettingsPage = () => {
       return
     }
 
+    let tempImageUrl = null;
+    
     try {
       setIsUploading(true)
       
       // Creăm un URL temporar pentru previzualizare
-      const tempImageUrl = URL.createObjectURL(file)
+      tempImageUrl = URL.createObjectURL(file)
       
-      // Actualizăm temporar imaginea de profil pentru feedback vizual imediat
-      const tempUser = { ...user, profileImage: tempImageUrl }
-      loginUser(tempUser)
+      console.log('Pregătire încărcare imagine:', {
+        nume: file.name,
+        tip: file.type,
+        dimensiune: `${(file.size / 1024).toFixed(2)} KB`
+      });
       
       const formData = new FormData()
       formData.append('image', file)
@@ -109,6 +127,12 @@ const SettingsPage = () => {
       console.log('API URL pentru încărcare imagine:', apiEndpoint)
 
       const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Nu ești autentificat. Te rugăm să te autentifici din nou.')
+      }
+      
+      console.log('Trimit cerere către server...');
+      
       // Eliminăm header-ul Content-Type pentru că FormData îl va seta automat cu boundary corect
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -118,37 +142,49 @@ const SettingsPage = () => {
         body: formData
       })
 
+      console.log('Răspuns primit de la server:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+        console.log('Răspuns JSON:', data);
+      } else {
+        const text = await response.text();
+        console.error('Răspuns non-JSON:', text);
+        throw new Error('Răspuns neașteptat de la server');
+      }
+
       if (!response.ok) {
-        const errorData = await response.text()
-        console.error('Server error:', errorData)
-        throw new Error(errorData || 'Încărcarea imaginii a eșuat')
+        console.error('Eroare server:', data);
+        throw new Error(data.message || data.error || 'Încărcarea imaginii a eșuat');
       }
-
-      const data = await response.json()
       
-      if (!data.user || !data.imageUrl) {
-        throw new Error('Răspunsul serverului nu conține datele necesare')
+      if (!data.user || !data.user.profileImage) {
+        console.error('Răspuns invalid:', data);
+        throw new Error('Răspunsul serverului nu conține datele necesare');
       }
+      
+      // Actualizăm utilizatorul cu noua imagine de profil primită de la server
+      const updatedUser = { ...user, profileImage: data.user.profileImage };
+      loginUser(updatedUser);
+      
+      // Afișăm un mesaj de succes
+      alert('Imaginea de profil a fost actualizată cu succes!');
 
-      // Update user context with new user data
-      const updatedUser = {
-        ...user,
-        profileImage: data.imageUrl
-      }
-      loginUser(updatedUser)
-
-      // Eliberăm URL-ul temporar
-      URL.revokeObjectURL(tempImageUrl)
     } catch (error) {
-      console.error('Error uploading image:', error)
-      alert('Încărcarea imaginii a eșuat. Te rugăm să încerci din nou.')
-      
-      // Revert to original user data if there was an error
-      if (user) {
-        loginUser(user)
-      }
+      console.error('Error uploading image:', error);
+      alert(`Eroare la încărcarea imaginii: ${error.message}`);
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
+      
+      // Revocăm URL-ul temporar pentru a elibera memoria
+      if (tempImageUrl) {
+        URL.revokeObjectURL(tempImageUrl);
+      }
     }
   }
 

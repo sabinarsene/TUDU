@@ -37,8 +37,8 @@ const ProfileSetupPage = () => {
     setIsLoading(true)
     setError("")
 
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
-    const apiEndpoint = `${API_URL}/api/profile/setup`
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
+    const apiEndpoint = `${API_URL}/profile/setup`
     
     console.log('API URL:', apiEndpoint)
     console.log('Form Data:', formData)

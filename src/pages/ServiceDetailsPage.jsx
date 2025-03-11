@@ -18,19 +18,24 @@ import {
 } from "lucide-react"
 import "./ServiceDetailsPage.css"
 import { fetchServiceById } from "../services/serviceApi"
+import { useAuth } from "../contexts/AuthContext"
+import { addServiceToFavorites, removeServiceFromFavorites, isServiceFavorited } from "../services/favoriteApi"
+import { getImageUrl, handleImageError } from "../utils/imageUtils"
 
 const ServiceDetailsPage = () => {
   const { serviceId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [service, setService] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Fetch service data when component mounts
+  // Fetch service data and favorite status when component mounts
   useEffect(() => {
     const getServiceDetails = async () => {
       try {
@@ -38,6 +43,13 @@ const ServiceDetailsPage = () => {
         const data = await fetchServiceById(serviceId)
         setService(data)
         setError(null)
+
+        // Check if service is favorited
+        if (user) {
+          const token = localStorage.getItem('token')
+          const favorited = await isServiceFavorited(serviceId, token)
+          setIsFavorite(favorited)
+        }
       } catch (err) {
         console.error("Error fetching service details:", err)
         setError("Nu am putut încărca detaliile serviciului. Vă rugăm încercați din nou mai târziu.")
@@ -47,7 +59,7 @@ const ServiceDetailsPage = () => {
     }
 
     getServiceDetails()
-  }, [serviceId])
+  }, [serviceId, user])
 
   // Show loading state
   if (loading) {
@@ -97,31 +109,33 @@ const ServiceDetailsPage = () => {
   }
 
   // Toggle favorite
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite)
+  const toggleFavorite = async () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+
+    try {
+      setIsTogglingFavorite(true)
+      const token = localStorage.getItem('token')
+      
+      if (isFavorite) {
+        await removeServiceFromFavorites(serviceId, token)
+      } else {
+        await addServiceToFavorites(serviceId, token)
+      }
+      
+      setIsFavorite(!isFavorite)
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+      alert('A apărut o eroare. Te rugăm să încerci din nou.')
+    } finally {
+      setIsTogglingFavorite(false)
+    }
   }
 
   // Reviews to display - we'll implement this later when we have reviews API
   const displayedReviews = []
-
-  // Funcție pentru a obține URL-ul complet al imaginii
-  const getImageUrl = (path) => {
-    if (!path) return '/placeholder.svg';
-    
-    // Verificăm dacă este un URL absolut
-    if (path.startsWith('http')) {
-      return path;
-    }
-    
-    // Altfel, construim URL-ul complet
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    return `${API_URL}${path}`;
-  };
-
-  // Funcție pentru a gestiona erorile de încărcare a imaginilor
-  const handleImageError = (e) => {
-    e.target.src = '/placeholder.svg';
-  };
 
   return (
     <div className="service-details-page">
@@ -136,8 +150,16 @@ const ServiceDetailsPage = () => {
           >
             <Share2 size={20} />
           </button>
-          <button className={`action-button ${isFavorite ? "favorite" : ""}`} onClick={toggleFavorite}>
-            <Heart size={20} fill={isFavorite ? "#ff1d68" : "none"} />
+          <button 
+            className={`action-button ${isFavorite ? "favorite" : ""}`} 
+            onClick={toggleFavorite}
+            disabled={isTogglingFavorite}
+          >
+            {isTogglingFavorite ? (
+              <Loader size={20} className="animate-spin" />
+            ) : (
+              <Heart size={20} fill={isFavorite ? "#ff1d68" : "none"} />
+            )}
           </button>
         </div>
       </header>
@@ -145,34 +167,11 @@ const ServiceDetailsPage = () => {
       <div className="service-gallery">
         <div className="gallery-main">
           <img
-            src={service.images && service.images.length > 0 
-              ? getImageUrl(service.images[activeImageIndex].image_url) 
-              : "/placeholder.svg"}
+            src={getImageUrl(service.image)}
             alt={service.title}
             className="main-image"
             onError={handleImageError}
           />
-
-          {service.images && service.images.length > 1 && (
-            <>
-              <button className="gallery-nav prev" onClick={prevImage}>
-                <ChevronLeft size={24} />
-              </button>
-              <button className="gallery-nav next" onClick={nextImage}>
-                <ChevronRight size={24} />
-              </button>
-
-              <div className="gallery-indicators">
-                {service.images.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`indicator ${index === activeImageIndex ? "active" : ""}`}
-                    onClick={() => setActiveImageIndex(index)}
-                  />
-                ))}
-              </div>
-            </>
-          )}
         </div>
       </div>
 

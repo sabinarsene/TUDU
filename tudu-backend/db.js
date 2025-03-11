@@ -55,28 +55,83 @@ async function initializeStorage() {
         
         if (getBucketError) {
           console.log(`Bucket ${bucketName} not found, attempting to create...`);
+          console.log('Error details:', getBucketError);
+          
           try {
+            // Create bucket with public access
+            console.log(`Creating bucket ${bucketName} with public access...`);
             const { data, error: createError } = await supabaseAdmin.storage.createBucket(bucketName, {
-              public: true,
-              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-              fileSizeLimit: 5242880 // 5MB
+              public: true
             });
             
             if (createError) {
               console.error(`Error creating bucket ${bucketName}:`, createError);
               console.log(`Continuing without storage bucket ${bucketName}. Image uploads to this bucket will not work.`);
             } else {
-              console.log(`Storage bucket ${bucketName} created successfully`);
+              console.log(`Storage bucket ${bucketName} created successfully:`, data);
+              
+              // Update bucket configuration
+              console.log(`Updating bucket ${bucketName} configuration...`);
+              const { error: updateError } = await supabaseAdmin.storage.updateBucket(bucketName, {
+                public: true,
+                allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                fileSizeLimit: 5242880 // 5MB
+              });
+              
+              if (updateError) {
+                console.error(`Error updating bucket ${bucketName} configuration:`, updateError);
+              } else {
+                console.log(`Bucket ${bucketName} configuration updated successfully`);
+              }
+              
+              // Set up a simple public policy
+              console.log(`Setting up policy for ${bucketName}...`);
+              try {
+                const { error: policyError } = await supabaseAdmin.storage.from(bucketName).createPolicy('allow-all', {
+                  name: `${bucketName}_allow_all`,
+                  definition: {
+                    role: '*',
+                    statement: '*',
+                    check: "true"
+                  }
+                });
+                
+                if (policyError) {
+                  console.error(`Error setting up policy for ${bucketName}:`, policyError);
+                } else {
+                  console.log(`Policy created successfully for ${bucketName}`);
+                }
+              } catch (policyError) {
+                console.error(`Exception setting up policy for ${bucketName}:`, policyError);
+              }
             }
           } catch (createBucketError) {
-            console.error(`Error creating bucket ${bucketName}:`, createBucketError);
+            console.error(`Exception creating bucket ${bucketName}:`, createBucketError);
             console.log(`Continuing without storage bucket ${bucketName}. Image uploads to this bucket will not work.`);
           }
         } else {
-          console.log(`Storage bucket ${bucketName} already exists`);
+          console.log(`Storage bucket ${bucketName} already exists:`, bucket);
+          
+          // Update existing bucket configuration
+          try {
+            console.log(`Updating existing bucket ${bucketName} configuration...`);
+            const { error: updateError } = await supabaseAdmin.storage.updateBucket(bucketName, {
+              public: true,
+              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+              fileSizeLimit: 5242880 // 5MB
+            });
+            
+            if (updateError) {
+              console.error(`Error updating bucket ${bucketName}:`, updateError);
+            } else {
+              console.log(`Storage bucket ${bucketName} updated successfully`);
+            }
+          } catch (updateError) {
+            console.error(`Exception updating bucket ${bucketName}:`, updateError);
+          }
         }
       } catch (bucketError) {
-        console.error(`Error checking bucket ${bucketName}:`, bucketError);
+        console.error(`Exception checking bucket ${bucketName}:`, bucketError);
       }
     }
   } catch (error) {

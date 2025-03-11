@@ -1147,3 +1147,133 @@
   }
 }
 
+.favorites-section {
+  padding: 24px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 24px;
+}
+
+.favorites-section .section-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+}
+
+.favorites-section .section-header h2 {
+  font-size: 1.5rem;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.favorites-section .services-grid,
+.favorites-section .requests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.favorites-section .service-card,
+.favorites-section .request-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.favorites-section .service-card:hover,
+.favorites-section .request-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.favorites-section .service-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.favorites-section .service-info,
+.favorites-section .request-info {
+  padding: 16px;
+}
+
+.favorites-section .service-info h3,
+.favorites-section .request-info h3 {
+  font-size: 1.2rem;
+  margin: 0 0 8px 0;
+  color: var(--text-color);
+}
+
+.favorites-section .service-description,
+.favorites-section .request-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.favorites-section .service-details,
+.favorites-section .request-details {
+  display: flex;
+  gap: 16px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.favorites-section .service-details span,
+.favorites-section .request-details span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.favorites-section .view-service-button,
+.favorites-section .view-request-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.favorites-section .view-service-button:hover,
+.favorites-section .view-request-button:hover {
+  background-color: var(--primary-color-dark);
+}
+
+.favorites-section .no-content {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 32px;
+  background-color: var(--off-white);
+  border-radius: 8px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .favorites-section {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  .favorites-section .services-grid,
+  .favorites-section .requests-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

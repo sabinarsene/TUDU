@@ -1,21 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { Search, Bell, Menu, X, MessageCircle, FileText, LogOut } from "lucide-react"
+import { Link } from "react-router-dom"
+import { Search, Bell, Menu, X, MessageCircle } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import "./Header.css"
 import logoImage from "../assets/images/favicon.png"
 
 const Header = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, logoutUser } = useAuth()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
+    setMobileMenuOpen(!mobileMenuOpen)
   }
 
   // Function to get profile image URL
@@ -24,8 +23,22 @@ const Header = () => {
       return "/placeholder.svg"
     }
     
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
-    return `${API_URL}${user.profileImage}`
+    // Verificăm dacă este un URL temporar (blob:)
+    if (user.profileImage.startsWith('blob:')) {
+      return user.profileImage;
+    }
+    
+    // Verificăm dacă este un URL absolut
+    if (user.profileImage.startsWith('http')) {
+      return user.profileImage;
+    }
+    
+    // Verificăm dacă path începe cu '/'
+    const path = user.profileImage.startsWith('/') ? user.profileImage : '/' + user.profileImage;
+    
+    // Altfel, construim URL-ul complet
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    return `${API_URL}${path}`;
   }
 
   // Function to handle image loading errors
@@ -36,7 +49,7 @@ const Header = () => {
   // Function for logout
   const handleLogout = (e) => {
     e.preventDefault()
-    logout()
+    logoutUser()
     toggleMobileMenu() // Close mobile menu if open
   }
 
@@ -98,15 +111,15 @@ const Header = () => {
           <button
             className="mobile-menu-button"
             onClick={toggleMobileMenu}
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </nav>
       </div>
 
       {/* Mobile Menu */}
-      <div className={`mobile-menu ${isMobileMenuOpen ? "open" : ""}`}>
+      <div className={`mobile-menu ${mobileMenuOpen ? "open" : ""}`}>
         <div className="mobile-menu-content">
           <div className="mobile-menu-header">
             <img 
@@ -155,7 +168,7 @@ const Header = () => {
 
           <div className="mobile-menu-footer">
             <button onClick={handleLogout} className="logout-button">
-              <LogOut size={18} />
+              <X size={18} />
               <span>Deconectare</span>
             </button>
           </div>
@@ -163,7 +176,7 @@ const Header = () => {
       </div>
 
       {/* Overlay for mobile menu */}
-      {isMobileMenuOpen && <div className="mobile-menu-overlay" onClick={toggleMobileMenu}></div>}
+      {mobileMenuOpen && <div className="mobile-menu-overlay" onClick={toggleMobileMenu}></div>}
     </header>
   )
 }

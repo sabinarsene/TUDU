@@ -1,0 +1,54 @@
+.rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-stars.interactive .star {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.rating-stars.interactive .star:hover {
+  transform: scale(1.1);
+}
+
+.rating-stars .star.filled {
+  filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.5));
+}
+
+/* Size variations */
+.rating-stars.size-small {
+  gap: 2px;
+}
+
+.rating-stars.size-large {
+  gap: 6px;
+}
+
+/* Animation for when a star is selected */
+@keyframes starPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.rating-stars.interactive .star.filled:active {
+  animation: starPulse 0.3s ease;
+}
+
+/* Rating display with text */
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rating-display .rating-value {
+  font-weight: 600;
+  color: #4A5568;
+}
+
+.rating-display .rating-count {
+  font-size: 0.85em;
+  color: #718096;
+} 

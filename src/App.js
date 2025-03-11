@@ -31,7 +31,7 @@ function App() {
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
           <Route path="/messages/:conversationId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-          <Route path="/service/:serviceId" element={<ServiceDetailsPage />} />
+          <Route path="/services/:serviceId" element={<ServiceDetailsPage />} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/requests" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
           <Route path="/request/:requestId" element={<ProtectedRoute><RequestDetailsPage /></ProtectedRoute>} />

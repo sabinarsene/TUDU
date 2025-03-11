@@ -197,25 +197,20 @@
   
   /* Image upload styles */
   .image-upload-container {
-    margin-top: 8px;
-  }
-  
-  .image-upload-area {
-    position: relative;
-    border: 2px dashed #e2e8f0;
+    border: 2px dashed var(--border-color);
     border-radius: 8px;
-    padding: 32px 16px;
+    padding: 20px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    position: relative;
+    transition: border-color 0.2s;
   }
   
-  .image-upload-area:hover {
-    border-color: var(--blue);
-    background-color: rgba(0, 114, 254, 0.05);
+  .image-upload-container:hover {
+    border-color: var(--primary);
   }
   
-  .image-input {
+  .image-upload-container input[type="file"] {
     position: absolute;
     top: 0;
     left: 0;
@@ -229,36 +224,27 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    color: #666;
+    gap: 8px;
+    color: var(--text-secondary);
   }
   
   .upload-placeholder svg {
-    color: var(--blue);
-    margin-bottom: 12px;
-  }
-  
-  .upload-placeholder p {
-    margin: 0 0 8px;
-    font-weight: 500;
-  }
-  
-  .upload-placeholder span {
-    font-size: 14px;
-    opacity: 0.8;
+    color: var(--primary);
   }
   
   .image-previews {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
-    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
   }
   
   .image-preview {
     position: relative;
+    width: 100px;
+    height: 100px;
     border-radius: 8px;
     overflow: hidden;
-    aspect-ratio: 1;
   }
   
   .image-preview img {
@@ -269,23 +255,23 @@
   
   .remove-image {
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
     width: 24px;
     height: 24px;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none;
+    color: white;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s;
   }
   
   .remove-image:hover {
-    background-color: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.7);
   }
   
   /* Form notice */

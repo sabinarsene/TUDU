@@ -39,9 +39,13 @@ if (!process.env.JWT_SECRET) {
 
 // Create upload directories
 const createUploadDirs = () => {
-  // Păstrăm doar directoarele necesare pentru alte funcționalități, nu pentru imagini
+  // Create directories for file uploads
   const dirs = [
-    'public'
+    'public',
+    'public/uploads',
+    'public/uploads/profile-images',
+    'public/uploads/service-images',
+    'public/uploads/request-images'
   ];
 
   dirs.forEach(dir => {
@@ -61,6 +65,14 @@ createUploadDirs();
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// Add CORS headers for image files
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);

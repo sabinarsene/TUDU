@@ -25,12 +25,22 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const loginUser = (userData) => {
+    console.log('Actualizare date utilizator:', userData);
     setUser(userData)
     // Salvează datele utilizatorului în localStorage
     localStorage.setItem('user', JSON.stringify(userData))
   }
 
-  const logout = () => {
+  const updateUserProfile = (profileData) => {
+    if (!user) return;
+    
+    const updatedUser = { ...user, ...profileData };
+    console.log('Actualizare profil utilizator:', updatedUser);
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  }
+
+  const logoutUser = () => {
     setUser(null)
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -40,7 +50,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loginUser,
-    logout,
+    updateUserProfile,
+    logoutUser,
     isAuthenticated: !!user
   }
 

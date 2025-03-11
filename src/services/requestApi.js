@@ -73,79 +73,33 @@ export const createRequest = async (requestData, token) => {
       throw new Error('Nu ești autentificat');
     }
 
-    // Verificăm că avem toate câmpurile obligatorii
-    const title = requestData.get('title');
-    const category = requestData.get('category');
-    const description = requestData.get('description');
-    const location = requestData.get('location');
-
-    if (!title || !title.trim()) {
-      throw new Error('Titlul este obligatoriu');
-    }
-
-    if (!category || !category.trim()) {
-      throw new Error('Categoria este obligatorie');
-    }
-
-    if (!description || !description.trim()) {
-      throw new Error('Descrierea este obligatorie');
-    }
-
-    if (!location || !location.trim()) {
-      throw new Error('Locația este obligatorie');
-    }
-
     console.log('Sending request to server with data:', {
-      title,
-      category,
-      description,
-      location,
+      title: requestData.get('title'),
+      category: requestData.get('category'),
+      description: requestData.get('description'),
+      location: requestData.get('location'),
       budget: requestData.get('budget'),
-      deadline: requestData.get('deadline')
+      deadline: requestData.get('deadline'),
+      image: requestData.get('image')
     });
 
     // Facem request-ul către server
     const response = await fetch(`${API_URL}/requests`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        title,
-        category,
-        description,
-        location,
-        budget: requestData.get('budget'),
-        currency: requestData.get('currency') || 'RON',
-        deadline: requestData.get('deadline')
-      })
+      body: requestData // Send FormData directly
     });
 
-    // Încercăm să obținem răspunsul JSON
-    let responseData;
-    try {
-      responseData = await response.json();
-    } catch (jsonError) {
-      console.error('Error parsing response:', jsonError);
-      // Dacă nu putem parsa JSON, folosim textul răspunsului
-      const textResponse = await response.text();
-      if (!response.ok) {
-        throw new Error(textResponse || `Error: ${response.status} ${response.statusText}`);
-      }
-      throw new Error('Răspunsul serverului nu este în format valid');
-    }
-
-    // Verificăm răspunsul
     if (!response.ok) {
-      console.error('Server returned error:', responseData);
-      throw new Error(responseData.message || responseData.error || 'A apărut o eroare la crearea cererii');
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error creating request');
     }
 
-    // Returnăm datele
-    return responseData;
+    return await response.json();
   } catch (error) {
-    console.error('Error creating request:', error);
+    console.error('Error in createRequest:', error);
     throw error;
   }
 };

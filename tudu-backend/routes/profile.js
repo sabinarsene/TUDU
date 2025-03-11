@@ -2,12 +2,27 @@ const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 const path = require('path')
-const { supabase } = require('../db')
+const { supabase, supabaseAdmin } = require('../db')
 const auth = require('../middleware/auth')
 const fs = require('fs')
+const { v4: uuidv4 } = require('uuid')
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage()
+// Configure multer for file uploads with disk storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Create directory if it doesn't exist
+    const uploadDir = path.join(__dirname, '../public/uploads/profile-images');
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const userId = req.user.id;
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `user-${userId}-${uniqueSuffix}${ext}`);
+  }
+});
+
 const upload = multer({
   storage: storage,
   limits: {
@@ -27,77 +42,51 @@ const upload = multer({
 router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' })
+      return res.status(400).json({ message: 'No file uploaded' });
     }
 
     console.log('Processing profile image upload for user:', req.user.id);
-
-    // Mai întâi verificăm dacă utilizatorul are deja o imagine de profil
+    console.log('File uploaded:', req.file);
+    
+    // Verificăm dacă utilizatorul există în baza de date
     const { data: currentUser, error: userError } = await supabase
       .from('users')
-      .select('profile_image')
+      .select('id, profile_image')
       .eq('id', req.user.id)
-      .single()
+      .single();
 
     if (userError) {
       console.error('Error fetching user data:', userError);
-      // Continuăm chiar dacă nu putem obține datele utilizatorului
+      return res.status(404).json({ 
+        message: 'User not found',
+        error: userError.message 
+      });
     }
 
-    // Încercăm să ștergem imaginea veche, dar nu blocăm procesul dacă eșuează
+    // Delete old image file if it exists
     if (currentUser?.profile_image) {
       try {
-        const oldImagePath = currentUser.profile_image.split('/').slice(-2).join('/');
-        await supabase.storage
-          .from('user-uploads')
-          .remove([oldImagePath]);
-      } catch (deleteError) {
-        console.warn('Could not delete old profile image:', deleteError);
-        // Continuăm chiar dacă ștergerea eșuează
+        const oldImagePath = currentUser.profile_image;
+        if (oldImagePath.includes('/uploads/profile-images/')) {
+          const localPath = path.join(__dirname, '../public', oldImagePath.split('/uploads')[1]);
+          if (fs.existsSync(localPath)) {
+            fs.unlinkSync(localPath);
+            console.log('Old profile image deleted:', localPath);
+          }
+        }
+      } catch (error) {
+        console.warn('Error deleting old profile image:', error);
       }
     }
 
-    const file = req.file;
-    const fileExt = path.extname(file.originalname).toLowerCase();
-    const fileName = `${Date.now()}${fileExt}`;
-    const filePath = `profile-images/${req.user.id}/${fileName}`;
+    // Generate public URL for the uploaded file
+    const relativePath = '/uploads/profile-images/' + path.basename(req.file.path);
+    const publicUrl = `${req.protocol}://${req.get('host')}${relativePath}`;
+    
+    console.log('Generated public URL:', publicUrl);
 
-    let publicUrl = null;
-    let uploadSuccess = false;
-
-    // Încercăm să încărcăm imaginea în Supabase
-    try {
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('user-uploads')
-        .upload(filePath, file.buffer, {
-          contentType: file.mimetype,
-          upsert: true
-        });
-
-      if (uploadError) {
-        console.error('Error uploading file to Supabase:', uploadError);
-        // Continuăm cu un URL temporar
-        publicUrl = `https://via.placeholder.com/150?text=${req.user.first_name.charAt(0)}${req.user.last_name ? req.user.last_name.charAt(0) : ''}`;
-      } else {
-        console.log('Image uploaded successfully to Supabase');
-        uploadSuccess = true;
-        
-        // Get public URL
-        const { data: { publicUrl: supabaseUrl } } = supabase.storage
-          .from('user-uploads')
-          .getPublicUrl(filePath);
-        
-        publicUrl = supabaseUrl;
-      }
-    } catch (storageError) {
-      console.error('Error in Supabase storage operations:', storageError);
-      // Folosim un URL temporar pentru placeholder
-      publicUrl = `https://via.placeholder.com/150?text=${req.user.first_name.charAt(0)}${req.user.last_name ? req.user.last_name.charAt(0) : ''}`;
-    }
-
-    console.log('Updating user profile with image URL:', publicUrl);
-
-    // Update user profile with new image URL
+    // Actualizăm profilul utilizatorului cu noul URL
+    console.log('Updating user profile with new image URL...');
     const { data: userData, error: updateError } = await supabase
       .from('users')
       .update({ 
@@ -118,18 +107,22 @@ router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error('Error updating user profile in database:', updateError);
+      console.error('Error updating user profile:', updateError);
+      // Delete the uploaded file if profile update fails
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
       return res.status(500).json({ 
-        message: 'Error updating user profile in database',
-        error: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+        message: 'Error updating user profile',
+        error: updateError.message 
       });
     }
 
-    console.log('User profile updated successfully');
+    console.log('User profile updated successfully:', userData);
 
-    // Return updated user data
     res.json({
-      message: uploadSuccess ? 'Profile image uploaded and profile updated successfully' : 'Profile updated with placeholder image',
+      message: 'Profile image uploaded successfully',
       user: {
         id: userData.id,
         firstName: userData.first_name,
@@ -143,9 +136,15 @@ router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
     });
   } catch (error) {
     console.error('Error in profile image upload process:', error);
+    
+    // Clean up the uploaded file if there was an error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
     res.status(500).json({ 
       message: 'Error processing profile image upload',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: error.message || 'Unknown error occurred'
     });
   }
 })
@@ -199,17 +198,42 @@ router.get('/:userId', async (req, res) => {
           currency,
           category,
           location,
+          image,
           created_at,
-          service_images (
-            id,
-            image_url,
-            is_main
-          )
+          rating,
+          review_count
         `)
         .eq('user_id', user.id)
 
       if (!servicesError) {
-        services = servicesData
+        services = servicesData.map(service => {
+          // Ensure image URL is properly formatted
+          let imageUrl = service.image;
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `${req.protocol}://${req.get('host')}${imageUrl}`;
+          }
+
+          return {
+            id: service.id,
+            title: service.title,
+            description: service.description,
+            price: service.price,
+            currency: service.currency,
+            category: service.category,
+            location: service.location,
+            image: imageUrl,
+            rating: service.rating,
+            review_count: service.review_count,
+            created_at: service.created_at,
+            provider: {
+              id: user.id,
+              name: `${user.first_name} ${user.last_name}`,
+              image: user.profile_image,
+              rating: user.rating,
+              reviewCount: user.review_count
+            }
+          }
+        })
       }
     }
 
@@ -317,5 +341,195 @@ router.get('/member-since', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 })
+
+// Get user's favorite services
+router.get('/services/favorites', auth, async (req, res) => {
+  try {
+    console.log('Fetching favorite services for user:', req.user.id);
+    
+    // Get favorite service IDs
+    const { data: favorites, error: favoritesError } = await supabase
+      .from('favorite_services')
+      .select('service_id')
+      .eq('user_id', req.user.id);
+    
+    if (favoritesError) {
+      console.error('Error fetching favorite services:', favoritesError);
+      return res.status(500).json({ 
+        message: 'Error fetching favorite services',
+        error: favoritesError.message 
+      });
+    }
+    
+    if (!favorites || favorites.length === 0) {
+      return res.json({ services: [] });
+    }
+    
+    // Get service details
+    const serviceIds = favorites.map(fav => fav.service_id);
+    const { data: services, error: servicesError } = await supabase
+      .from('services')
+      .select(`
+        *,
+        provider:user_id (
+          id,
+          first_name,
+          last_name,
+          profile_image,
+          rating,
+          review_count
+        )
+      `)
+      .in('id', serviceIds);
+    
+    if (servicesError) {
+      console.error('Error fetching service details:', servicesError);
+      return res.status(500).json({ 
+        message: 'Error fetching service details',
+        error: servicesError.message 
+      });
+    }
+    
+    // Format services
+    const formattedServices = services.map(service => ({
+      id: service.id,
+      title: service.title,
+      description: service.description,
+      price: service.price,
+      currency: service.currency,
+      location: service.location,
+      category: service.category,
+      image: service.image,
+      provider: service.provider ? {
+        id: service.provider.id,
+        name: `${service.provider.first_name} ${service.provider.last_name}`,
+        profileImage: service.provider.profile_image,
+        rating: service.provider.rating,
+        reviewCount: service.provider.review_count
+      } : null
+    }));
+    
+    res.json({ services: formattedServices });
+  } catch (error) {
+    console.error('Error fetching favorite services:', error);
+    res.status(500).json({ 
+      message: 'Error fetching favorite services',
+      error: error.message 
+    });
+  }
+});
+
+// Get user's favorite requests
+router.get('/requests/favorites', auth, async (req, res) => {
+  try {
+    // Forward the request to the requests router
+    const requestsRouter = require('./requests');
+    // Pass the request to the requests router
+    req.url = '/favorites';
+    requestsRouter(req, res);
+  } catch (error) {
+    console.error('Error forwarding to favorite requests:', error);
+    res.status(500).json({ 
+      message: 'Error fetching favorite requests',
+      error: error.message
+    });
+  }
+});
+
+// Add service to favorites
+router.post('/services/:serviceId/favorite', auth, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const userId = req.user.id;
+
+    // Check if service exists
+    const { data: service, error: serviceError } = await supabase
+      .from('services')
+      .select('id')
+      .eq('id', serviceId)
+      .single();
+
+    if (serviceError || !service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    // Check if already favorited
+    const { data: existingFavorite, error: favoriteError } = await supabase
+      .from('favorite_services')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('service_id', serviceId)
+      .single();
+
+    if (existingFavorite) {
+      return res.status(400).json({ error: 'Service already in favorites' });
+    }
+
+    // Add to favorites
+    const { error: insertError } = await supabase
+      .from('favorite_services')
+      .insert([{ user_id: userId, service_id: serviceId }]);
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    res.json({ message: 'Service added to favorites' });
+  } catch (error) {
+    console.error('Error adding service to favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Remove service from favorites
+router.delete('/services/:serviceId/favorite', auth, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const userId = req.user.id;
+
+    const { data, error } = await supabase
+      .from('favorite_services')
+      .delete()
+      .eq('user_id', userId)
+      .eq('service_id', serviceId);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Service not found in favorites' });
+    }
+
+    res.json({ message: 'Service removed from favorites' });
+  } catch (error) {
+    console.error('Error removing service from favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Check if service is favorited
+router.get('/services/:serviceId/favorite', auth, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const userId = req.user.id;
+
+    const { data: favorite, error } = await supabase
+      .from('favorite_services')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('service_id', serviceId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // Ignore "no rows returned" error
+      throw error;
+    }
+
+    res.json({ isFavorited: !!favorite });
+  } catch (error) {
+    console.error('Error checking service favorite status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 module.exports = router 
