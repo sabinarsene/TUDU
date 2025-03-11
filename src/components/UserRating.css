@@ -1,18 +1,71 @@
 .user-rating-container {
-  background-color: #fff;
+  background-color: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  margin: 20px 0;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-rating-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: #64748b;
+}
+
+.user-rating-loading .spinner {
+  animation: spin 1.5s linear infinite;
+}
+
+.user-rating-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 24px;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+}
+
+.user-rating-unavailable h3 {
+  margin: 16px 0 8px;
+  color: #334155;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.user-rating-unavailable p {
+  margin: 0 0 8px;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.user-rating-unavailable .technical-info {
+  font-size: 12px;
+  color: #94a3b8;
+  background-color: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 450px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .rating-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 24px;
 }
 
 .average-rating {
@@ -21,70 +74,68 @@
   gap: 12px;
 }
 
-.average-rating .rating-value {
-  font-size: 24px;
+.rating-value {
+  font-size: 32px;
   font-weight: 700;
-  color: #2D3748;
+  color: #0f172a;
 }
 
-.average-rating .rating-count {
+.rating-count {
+  color: #64748b;
   font-size: 14px;
-  color: #718096;
 }
 
 .rating-form {
-  margin-top: 20px;
+  margin-bottom: 24px;
 }
 
 .rating-form h3 {
   font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: #2D3748;
+  color: #0f172a;
+  margin: 0 0 16px 0;
 }
 
 .rating-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .rating-selection label {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
   font-size: 14px;
-  color: #4A5568;
 }
 
 .comment-input {
-  margin-top: 15px;
+  margin-top: 16px;
 }
 
 .textarea-wrapper {
   position: relative;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .textarea-icon {
   position: absolute;
   top: 12px;
   left: 12px;
-  color: #A0AEC0;
+  color: #64748b;
 }
 
 .comment-input textarea {
   width: 100%;
   padding: 12px 12px 12px 40px;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   resize: vertical;
   font-size: 14px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s ease;
 }
 
 .comment-input textarea:focus {
   outline: none;
-  border-color: #4299E1;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .submit-rating-btn {
@@ -92,22 +143,24 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: #4299E1;
+  width: 100%;
+  padding: 12px;
+  background-color: #3b82f6;
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 10px 16px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .submit-rating-btn:hover {
-  background-color: #3182CE;
+  background-color: #2563eb;
 }
 
 .submit-rating-btn:disabled {
-  background-color: #CBD5E0;
+  background-color: #94a3b8;
   cursor: not-allowed;
 }
 
@@ -115,54 +168,67 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 15px;
-  padding: 10px;
-  background-color: #FFF5F5;
-  border-radius: 6px;
-  color: #E53E3E;
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-radius: 8px;
   font-size: 14px;
 }
 
 .rating-success {
-  margin-top: 15px;
-  padding: 10px;
-  background-color: #F0FFF4;
-  border-radius: 6px;
-  color: #38A169;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #dcfce7;
+  color: #10b981;
+  border-radius: 8px;
   font-size: 14px;
-  text-align: center;
 }
 
 .user-already-rated {
-  margin-top: 15px;
-  padding: 15px;
-  background-color: #F7FAFC;
+  padding: 16px;
+  background-color: #f8fafc;
   border-radius: 8px;
-  color: #4A5568;
+  margin-bottom: 24px;
+}
+
+.user-already-rated p {
+  margin: 0 0 8px 0;
+  color: #64748b;
 }
 
 .existing-comment {
-  margin-top: 10px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.existing-comment p {
+  margin: 0;
   font-style: italic;
-  color: #718096;
+  color: #0f172a;
 }
 
 .ratings-list {
-  margin-top: 30px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 24px;
 }
 
 .ratings-list h3 {
   font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: #2D3748;
+  color: #0f172a;
+  margin: 0 0 16px 0;
 }
 
 .rating-item {
-  padding: 15px;
+  padding: 16px;
+  background-color: #f8fafc;
   border-radius: 8px;
-  background-color: #F7FAFC;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .rating-header {
@@ -172,39 +238,45 @@
 }
 
 .rater-name {
-  font-weight: 600;
-  color: #2D3748;
+  font-weight: 500;
+  color: #0f172a;
 }
 
 .rating-date {
   font-size: 12px;
-  color: #718096;
+  color: #64748b;
 }
 
 .rating-comment {
-  margin-top: 10px;
+  margin-top: 8px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
   font-size: 14px;
-  color: #4A5568;
-  line-height: 1.5;
+  color: #334155;
+  line-height: 1.6;
 }
 
-.user-rating-loading {
+.no-ratings-message {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 15px;
-  color: #718096;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  margin-top: 16px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
 }
 
-.spinner {
-  animation: spin 1s linear infinite;
+.no-ratings-message svg {
+  margin-bottom: 12px;
+  color: #94a3b8;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.no-ratings-message p {
+  margin: 0;
+  font-size: 15px;
 } 

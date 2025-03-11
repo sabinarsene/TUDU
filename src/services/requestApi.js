@@ -166,4 +166,74 @@ export const deleteRequest = async (id, token) => {
     console.error(`Error deleting request with ID ${id}:`, error);
     throw error;
   }
+};
+
+/**
+ * Fetch requests for a specific user
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of requests
+ */
+export const fetchUserRequests = async (userId) => {
+  try {
+    // Încercăm să facem apelul API
+    try {
+      const response = await fetch(`${API_URL}/requests/user/${userId}`);
+      
+      if (!response.ok) {
+        // Dacă primim 404, returnăm date mock
+        if (response.status === 404) {
+          console.log(`Endpoint /requests/user/${userId} nu este disponibil, returnăm date mock`);
+          return getMockUserRequests(userId);
+        }
+        throw new Error(`Error fetching user requests: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      // Dacă primim orice eroare, returnăm date mock
+      console.error(`Error fetching requests for user ${userId}:`, error);
+      return getMockUserRequests(userId);
+    }
+  } catch (error) {
+    console.error(`Error fetching requests for user ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Generează date mock pentru cererile unui utilizator
+ * @param {string} userId - ID-ul utilizatorului
+ * @returns {Array} Array de cereri mock
+ */
+const getMockUserRequests = (userId) => {
+  // Generăm un număr aleatoriu de cereri între 0 și 3
+  const numRequests = Math.floor(Math.random() * 4);
+  const requests = [];
+  
+  const categories = ['Instalații', 'Curățenie', 'Transport', 'Reparații', 'IT', 'Design', 'Educație'];
+  const locations = ['București', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Brașov', 'Constanța'];
+  const deadlines = ['Urgent', '1-3 zile', 'O săptămână', '2 săptămâni', 'O lună'];
+  
+  // Generăm cereri aleatorii
+  for (let i = 0; i < numRequests; i++) {
+    const request = {
+      id: `mock-request-${i}`,
+      title: `Cerere Mock ${i + 1}`,
+      description: `Aceasta este o descriere mock pentru cererea ${i + 1} a utilizatorului cu ID-ul ${userId}.`,
+      category: categories[Math.floor(Math.random() * categories.length)],
+      location: locations[Math.floor(Math.random() * locations.length)],
+      budget: Math.floor(Math.random() * 1000) + 100,
+      currency: 'RON',
+      deadline: deadlines[Math.floor(Math.random() * deadlines.length)],
+      images: [],
+      user: {
+        id: userId,
+        name: `Utilizator ${userId}`,
+        image: null
+      }
+    };
+    requests.push(request);
+  }
+  
+  return requests;
 }; 

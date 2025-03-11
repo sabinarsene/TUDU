@@ -204,6 +204,65 @@ async function testConnection() {
 // Test connection on startup
 testConnection();
 
+// Adăugăm o funcție pentru a executa SQL direct
+async function createExecSqlFunction() {
+  try {
+    console.log('Crearea funcției exec_sql...');
+    
+    // Verificăm dacă funcția există deja
+    const { data: existingFunction, error: checkError } = await supabaseAdmin.rpc('exec_sql', { sql: 'SELECT 1' }).catch(() => ({ data: null }));
+    
+    if (existingFunction) {
+      console.log('Funcția exec_sql există deja.');
+      return;
+    }
+    
+    // Creăm funcția exec_sql
+    const createFunctionSql = `
+      CREATE OR REPLACE FUNCTION exec_sql(sql text)
+      RETURNS void
+      LANGUAGE plpgsql
+      SECURITY DEFINER
+      AS $$
+      BEGIN
+        EXECUTE sql;
+      END;
+      $$;
+    `;
+    
+    const { error } = await supabaseAdmin.from('_exec_sql').select('*').limit(1);
+    
+    if (error) {
+      // Dacă tabela nu există, o creăm
+      await supabaseAdmin.rpc('exec_sql_direct', { sql: createFunctionSql }).catch(async () => {
+        // Dacă funcția exec_sql_direct nu există, folosim REST API
+        const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql_direct`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey
+          },
+          body: JSON.stringify({ sql: createFunctionSql })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create exec_sql function: ${response.statusText}`);
+        }
+      });
+      
+      console.log('Funcția exec_sql a fost creată cu succes.');
+    } else {
+      console.log('Tabela _exec_sql există deja.');
+    }
+  } catch (error) {
+    console.error('Eroare la crearea funcției exec_sql:', error);
+  }
+}
+
+// Inițializăm funcția exec_sql
+createExecSqlFunction();
+
 // Export configured clients
 module.exports = {
   supabase,

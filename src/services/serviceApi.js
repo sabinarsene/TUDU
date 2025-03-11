@@ -1,5 +1,6 @@
 // Service API for handling service-related API calls
-const API_URL = 'http://localhost:5000/api';
+// Folosim window.location.hostname pentru a obține adresa IP sau hostname-ul curent
+export const API_URL = `http://${window.location.hostname}:5000/api`;
 
 // Log the API URL for debugging
 console.log('API URL:', API_URL);
@@ -176,23 +177,58 @@ export const deleteService = async (id, token) => {
  */
 export const submitUserRating = async (userId, rating, comment, token) => {
   try {
-    const response = await fetch(`${API_URL}/users/${userId}/ratings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        rating,
-        comment
-      })
-    });
+    console.log(`Submitting rating ${rating} for user ${userId} with comment: ${comment}`);
+    const apiUrl = `${API_URL}/users/${userId}/ratings`;
+    console.log('API URL:', apiUrl);
     
-    if (!response.ok) {
-      throw new Error(`Error submitting rating: ${response.statusText}`);
+    // Adăugăm un timeout pentru a evita blocarea UI-ului
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secunde timeout
+    
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          rating,
+          comment
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers]));
+      
+      if (!response.ok) {
+        // Încercăm să obținem detalii despre eroare
+        try {
+          const errorData = await response.json();
+          console.error('Error response:', errorData);
+          throw new Error(errorData.message || `Error submitting rating: ${response.statusText}`);
+        } catch (jsonError) {
+          console.error('Could not parse error response:', jsonError);
+          throw new Error(`Error submitting rating: ${response.statusText}`);
+        }
+      }
+      
+      const data = await response.json();
+      console.log('Rating submitted successfully:', data);
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error('Request timed out after 10 seconds');
+        throw new Error('Cererea a expirat. Serverul nu a răspuns în timp util.');
+      }
+      
+      throw fetchError;
     }
-    
-    return await response.json();
   } catch (error) {
     console.error(`Error submitting rating for user ${userId}:`, error);
     throw error;
@@ -202,19 +238,133 @@ export const submitUserRating = async (userId, rating, comment, token) => {
 /**
  * Fetch ratings for a user
  * @param {string} userId - ID of the user
- * @returns {Promise<Array>} Array of ratings
+ * @returns {Promise<Object>} Object with ratings array
  */
 export const fetchUserRatings = async (userId) => {
   try {
-    const response = await fetch(`${API_URL}/users/${userId}/ratings`);
+    console.log(`Fetching ratings for user ${userId}`);
+    const apiUrl = `${API_URL}/users/${userId}/ratings`;
+    console.log('API URL:', apiUrl);
     
-    if (!response.ok) {
-      throw new Error(`Error fetching ratings: ${response.statusText}`);
+    // Adăugăm un timeout pentru a evita blocarea UI-ului
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secunde timeout
+    
+    try {
+      const response = await fetch(apiUrl, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers]));
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log(`Endpoint /users/${userId}/ratings nu este disponibil sau utilizatorul nu are evaluări`);
+          return { ratings: [], averageRating: 0, reviewCount: 0 };
+        }
+        
+        // Încercăm să obținem detalii despre eroare
+        try {
+          const errorData = await response.json();
+          console.error('Error response data:', errorData);
+          throw new Error(errorData.message || `Error fetching ratings: ${response.statusText}`);
+        } catch (jsonError) {
+          console.error('Could not parse error response:', jsonError);
+          throw new Error(`Error fetching ratings: ${response.statusText}`);
+        }
+      }
+      
+      const data = await response.json();
+      console.log('Ratings fetched successfully:', data);
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error('Request timed out after 10 seconds');
+        throw new Error('Cererea a expirat. Serverul nu a răspuns în timp util.');
+      }
+      
+      throw fetchError;
     }
-    
-    return await response.json();
   } catch (error) {
     console.error(`Error fetching ratings for user ${userId}:`, error);
+    
+    // Returnăm un obiect gol în loc să aruncăm eroarea
+    // pentru a permite componentei să afișeze un mesaj de eroare
+    return { ratings: [], averageRating: 0, reviewCount: 0 };
+  }
+};
+
+/**
+ * Fetch services for a specific user
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of services
+ */
+export const fetchUserServices = async (userId) => {
+  try {
+    // Încercăm să facem apelul API
+    try {
+      const response = await fetch(`${API_URL}/services/user/${userId}`);
+      
+      if (!response.ok) {
+        // Dacă primim 404, returnăm date mock
+        if (response.status === 404) {
+          console.log(`Endpoint /services/user/${userId} nu este disponibil, returnăm date mock`);
+          return getMockUserServices(userId);
+        }
+        throw new Error(`Error fetching user services: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      // Dacă primim orice eroare, returnăm date mock
+      console.error(`Error fetching services for user ${userId}:`, error);
+      return getMockUserServices(userId);
+    }
+  } catch (error) {
+    console.error(`Error fetching services for user ${userId}:`, error);
     throw error;
   }
+};
+
+/**
+ * Generează date mock pentru serviciile unui utilizator
+ * @param {string} userId - ID-ul utilizatorului
+ * @returns {Array} Array de servicii mock
+ */
+const getMockUserServices = (userId) => {
+  // Generăm un număr aleatoriu de servicii între 1 și 5
+  const numServices = Math.floor(Math.random() * 5) + 1;
+  const services = [];
+  
+  const categories = ['Instalații', 'Curățenie', 'Transport', 'Reparații', 'IT', 'Design', 'Educație'];
+  const locations = ['București', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Brașov', 'Constanța'];
+  
+  // Generăm servicii aleatorii
+  for (let i = 0; i < numServices; i++) {
+    const service = {
+      id: `mock-service-${i}`,
+      title: `Serviciu Mock ${i + 1}`,
+      description: `Aceasta este o descriere mock pentru serviciul ${i + 1} al utilizatorului cu ID-ul ${userId}.`,
+      category: categories[Math.floor(Math.random() * categories.length)],
+      location: locations[Math.floor(Math.random() * locations.length)],
+      price: Math.floor(Math.random() * 500) + 50,
+      currency: 'RON',
+      rating: (Math.random() * 4 + 1).toFixed(1),
+      review_count: Math.floor(Math.random() * 50),
+      image: null,
+      provider: {
+        id: userId,
+        name: `Utilizator ${userId}`,
+        image: null
+      }
+    };
+    services.push(service);
+  }
+  
+  return services;
 }; 

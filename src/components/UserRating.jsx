@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import RatingStars from './RatingStars';
 import { submitUserRating, fetchUserRatings } from '../services/serviceApi';
-import { Loader, AlertTriangle, MessageSquare, Send } from 'lucide-react';
+import { Loader, AlertTriangle, MessageSquare, Send, Info } from 'lucide-react';
 import './UserRating.css';
+
+// Importăm API_URL din serviceApi.js
+import { API_URL } from '../services/serviceApi';
 
 /**
  * UserRating component for displaying and submitting user ratings
@@ -21,23 +24,29 @@ const UserRating = ({ userId }) => {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [userHasRated, setUserHasRated] = useState(false);
   const [existingUserRating, setExistingUserRating] = useState(null);
+  const [apiNotAvailable, setApiNotAvailable] = useState(false);
 
   // Fetch user ratings when component mounts
   useEffect(() => {
     const loadRatings = async () => {
       try {
         setLoading(true);
-        const ratingsData = await fetchUserRatings(userId);
-        setRatings(ratingsData.ratings || []);
+        setError(null);
         
-        // Calculate average rating
-        if (ratingsData.ratings && ratingsData.ratings.length > 0) {
-          const sum = ratingsData.ratings.reduce((acc, curr) => acc + curr.rating, 0);
-          setAverageRating(sum / ratingsData.ratings.length);
-        }
+        console.log("Fetching ratings for user:", userId);
+        console.log("API URL being used:", `${API_URL}/users/${userId}/ratings`);
+        
+        const ratingsData = await fetchUserRatings(userId);
+        console.log("Ratings data:", ratingsData);
+        
+        // Set ratings data
+        setRatings(ratingsData.ratings || []);
+        setAverageRating(ratingsData.averageRating || 0);
+        setReviewCount(ratingsData.reviewCount || 0);
         
         // Check if current user has already rated
         if (user && ratingsData.ratings) {
@@ -48,9 +57,18 @@ const UserRating = ({ userId }) => {
             setUserRating(userRating.rating);
           }
         }
+        
+        setApiNotAvailable(false);
       } catch (err) {
         console.error('Error loading ratings:', err);
-        setError('Nu am putut încărca evaluările. Te rugăm să încerci din nou.');
+        
+        // Check if the error is a 404 (API endpoint not found)
+        if (err.message && (err.message.includes('404') || err.message.includes('Not Found'))) {
+          console.log("API endpoint not available, setting apiNotAvailable to true");
+          setApiNotAvailable(true);
+        } else {
+          setError('Nu am putut încărca evaluările. Te rugăm să încerci din nou.');
+        }
       } finally {
         setLoading(false);
       }
@@ -87,7 +105,9 @@ const UserRating = ({ userId }) => {
       setIsSubmitting(true);
       setError(null);
       
-      await submitUserRating(userId, userRating, comment, user.token);
+      console.log("Submitting rating:", userRating, "for user:", userId);
+      const result = await submitUserRating(userId, userRating, comment, user.token);
+      console.log("Rating submitted:", result);
       
       setSuccess(true);
       setUserHasRated(true);
@@ -95,11 +115,15 @@ const UserRating = ({ userId }) => {
       // Refresh ratings after submission
       const ratingsData = await fetchUserRatings(userId);
       setRatings(ratingsData.ratings || []);
+      setAverageRating(ratingsData.averageRating || 0);
+      setReviewCount(ratingsData.reviewCount || 0);
       
-      // Recalculate average
-      if (ratingsData.ratings && ratingsData.ratings.length > 0) {
-        const sum = ratingsData.ratings.reduce((acc, curr) => acc + curr.rating, 0);
-        setAverageRating(sum / ratingsData.ratings.length);
+      // Find the user's rating in the updated ratings
+      if (ratingsData.ratings) {
+        const updatedUserRating = ratingsData.ratings.find(r => r.ratedBy === user.id);
+        if (updatedUserRating) {
+          setExistingUserRating(updatedUserRating);
+        }
       }
       
       // Clear comment
@@ -112,17 +136,34 @@ const UserRating = ({ userId }) => {
       }, 3000);
     } catch (err) {
       console.error('Error submitting rating:', err);
-      setError('Nu am putut trimite evaluarea. Te rugăm să încerci din nou.');
+      setError(err.message || 'Nu am putut trimite evaluarea. Te rugăm să încerci din nou.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Show loading state
   if (loading) {
     return (
-      <div className="user-rating-loading">
-        <Loader size={20} className="spinner" />
-        <span>Se încarcă evaluările...</span>
+      <div className="user-rating-container">
+        <div className="user-rating-loading">
+          <Loader className="spinner" size={24} />
+          <span>Se încarcă evaluările...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // If API is not available, show a message
+  if (apiNotAvailable) {
+    return (
+      <div className="user-rating-container">
+        <div className="user-rating-unavailable">
+          <Info size={32} />
+          <h3>Sistemul de evaluări nu este disponibil momentan</h3>
+          <p>Lucrăm la implementarea sistemului de evaluări pentru utilizatori. Vă mulțumim pentru înțelegere!</p>
+          <p className="technical-info">Detalii tehnice: Endpoint-ul API pentru evaluări nu este disponibil. Verificați consola pentru mai multe informații.</p>
+        </div>
       </div>
     );
   }
@@ -133,11 +174,11 @@ const UserRating = ({ userId }) => {
         <div className="average-rating">
           <div className="rating-value">{averageRating.toFixed(1)}</div>
           <RatingStars initialRating={averageRating} readOnly={true} size="medium" />
-          <div className="rating-count">({ratings.length} {ratings.length === 1 ? 'evaluare' : 'evaluări'})</div>
+          <div className="rating-count">({reviewCount} {reviewCount === 1 ? 'evaluare' : 'evaluări'})</div>
         </div>
       </div>
       
-      {!userHasRated ? (
+      {!userHasRated && user && user.id !== userId ? (
         <div className="rating-form">
           <h3>Evaluează acest utilizator</h3>
           <form onSubmit={handleSubmit}>
@@ -193,7 +234,7 @@ const UserRating = ({ userId }) => {
             )}
           </form>
         </div>
-      ) : (
+      ) : userHasRated && (
         <div className="user-already-rated">
           <p>Ai evaluat deja acest utilizator cu {existingUserRating?.rating} {existingUserRating?.rating === 1 ? 'stea' : 'stele'}</p>
           {existingUserRating?.comment && (
@@ -204,7 +245,7 @@ const UserRating = ({ userId }) => {
         </div>
       )}
       
-      {ratings.length > 0 && (
+      {ratings.length > 0 ? (
         <div className="ratings-list">
           <h3>Toate evaluările</h3>
           {ratings.map((rating) => (
@@ -217,6 +258,11 @@ const UserRating = ({ userId }) => {
               {rating.comment && <div className="rating-comment">{rating.comment}</div>}
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="no-ratings-message">
+          <Info size={24} />
+          <p>Acest utilizator nu a primit încă nicio evaluare.</p>
         </div>
       )}
     </div>

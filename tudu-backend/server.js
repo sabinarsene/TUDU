@@ -11,6 +11,9 @@ const serviceRoutes = require('./routes/services');
 const requestRoutes = require('./routes/requests');
 const profileRoutes = require('./routes/profile');
 
+// Import middleware
+const { authenticateToken } = require('./middleware/auth');
+
 // Initialize express app
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,7 +22,7 @@ const PORT = process.env.PORT || 5000;
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://your-production-domain.com'] 
-    : ['http://localhost:3000', 'http://localhost:5173'],
+    : '*', // Permite cereri de la orice origine în modul de dezvoltare
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
   exposedHeaders: ['x-auth-token'],

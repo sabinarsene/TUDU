@@ -24,8 +24,9 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/profile/setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/post-service" element={<ProtectedRoute><PostServicePage /></ProtectedRoute>} />
           <Route path="/post-request" element={<ProtectedRoute><PostRequestPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
@@ -35,6 +36,7 @@ function App() {
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/requests" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
           <Route path="/request/:requestId" element={<ProtectedRoute><RequestDetailsPage /></ProtectedRoute>} />
+          <Route path="/requests/:requestId" element={<ProtectedRoute><RequestDetailsPage /></ProtectedRoute>} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/" element={<HomePage />} />
         </Routes>

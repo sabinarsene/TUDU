@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Folosim window.location.hostname pentru a obține adresa IP sau hostname-ul curent
+const API_URL = `http://${window.location.hostname}:5000/api`;
 const AUTH_ENDPOINT = `${API_URL}/auth`;
+
+console.log('Auth API URL:', API_URL);
 
 // Setarea token-ului în header-ul de autorizare
 const setAuthToken = (token) => {
@@ -29,7 +32,18 @@ export const register = async (userData) => {
     
     return response.data;
   } catch (error) {
-    throw error.response.data;
+    console.error('Register error:', error);
+    
+    // Gestionare îmbunătățită a erorilor
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message || 'Eroare la înregistrare');
+    } else if (error.request) {
+      // Cererea a fost făcută dar nu s-a primit răspuns
+      throw new Error('Nu s-a putut contacta serverul. Verificați conexiunea la internet.');
+    } else {
+      // Eroare la configurarea cererii
+      throw new Error(error.message || 'A apărut o eroare la înregistrare.');
+    }
   }
 };
 
@@ -47,7 +61,18 @@ export const login = async (email, password) => {
     
     return response.data;
   } catch (error) {
-    throw error.response.data;
+    console.error('Login error:', error);
+    
+    // Gestionare îmbunătățită a erorilor
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message || 'Eroare la autentificare');
+    } else if (error.request) {
+      // Cererea a fost făcută dar nu s-a primit răspuns
+      throw new Error('Nu s-a putut contacta serverul. Verificați conexiunea la internet.');
+    } else {
+      // Eroare la configurarea cererii
+      throw new Error(error.message || 'A apărut o eroare la autentificare.');
+    }
   }
 };
 
@@ -74,6 +99,17 @@ export const getUserProfile = async () => {
     const response = await axios.get(`${AUTH_ENDPOINT}/profile`);
     return response.data;
   } catch (error) {
-    throw error.response.data;
+    console.error('Get profile error:', error);
+    
+    // Gestionare îmbunătățită a erorilor
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message || 'Eroare la obținerea profilului');
+    } else if (error.request) {
+      // Cererea a fost făcută dar nu s-a primit răspuns
+      throw new Error('Nu s-a putut contacta serverul. Verificați conexiunea la internet.');
+    } else {
+      // Eroare la configurarea cererii
+      throw new Error(error.message || 'A apărut o eroare la obținerea profilului.');
+    }
   }
 };

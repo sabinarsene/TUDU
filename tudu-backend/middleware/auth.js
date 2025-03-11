@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 // Middleware pentru verificarea autentificării
-const auth = (req, res, next) => {
+const authenticateToken = (req, res, next) => {
   // Get token from Authorization header
   const authHeader = req.header('Authorization');
   
@@ -35,4 +35,5 @@ const auth = (req, res, next) => {
   }
 };
 
-module.exports = auth; 
+// Exportăm middleware-ul
+module.exports = { authenticateToken }; 

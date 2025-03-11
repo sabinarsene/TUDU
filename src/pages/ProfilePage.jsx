@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { Star, Settings, Edit, MapPin, Calendar, MessageCircle, Loader, AlertTriangle, Trash2, LogOut, Briefcase } from "lucide-react"
+import { Star, Settings, Edit, MapPin, Calendar, MessageCircle, Loader, AlertTriangle, Trash2, LogOut, Briefcase, User } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import "./ProfilePage.css"
-import { deleteService } from "../services/serviceApi"
+import { deleteService, fetchUserServices } from "../services/serviceApi"
+import { fetchUserRequests } from "../services/requestApi"
 import { FaMapMarkerAlt, FaClock, FaEye } from 'react-icons/fa'
 import defaultProfileImage from '../assets/default-profile.jpg'
 import UserRating from "../components/UserRating"
@@ -36,13 +37,22 @@ const ProfilePage = () => {
   const [profileUser, setProfileUser] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
-  const isOwnProfile = !userId || (user && userId === user.id)
+  const isOwnProfile = !userId || (user && userId === String(user.id))
   const [requests, setRequests] = useState([])
   const [favoriteServices, setFavoriteServices] = useState([])
   const [favoriteRequests, setFavoriteRequests] = useState([])
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deletingServiceId, setDeletingServiceId] = useState(null)
+
+  // Set default tab based on whether it's own profile or not
+  useEffect(() => {
+    if (!isOwnProfile) {
+      setActiveTab("about")
+    } else {
+      setActiveTab("services")
+    }
+  }, [isOwnProfile])
 
   const formatMemberDate = (date) => {
     if (!date) return 'Dată necunoscută';
@@ -67,29 +77,49 @@ const ProfilePage = () => {
     const fetchProfileData = async () => {
       try {
         setLoading(true)
+        console.log("Fetching profile data, userId:", userId, "isOwnProfile:", isOwnProfile);
+        
         if (userId) {
           // Fetch other user's profile
           const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
+          console.log("Fetching profile from:", `${API_URL}/profile/${userId}`);
+          
           const response = await fetch(`${API_URL}/profile/${userId}`)
           
           if (!response.ok) {
-            throw new Error('Failed to fetch profile')
+            console.error("Error response:", response.status, response.statusText);
+            throw new Error(`Failed to fetch profile: ${response.status} ${response.statusText}`)
           }
           
           const data = await response.json()
-          console.log('Profile data:', data)
+          console.log('Profile data received:', data)
           setProfileUser(data)
-          setServices(data.services || [])
+          
+          // Verificăm dacă există servicii în răspunsul API-ului
+          console.log('Services in profile data:', data.services);
+          
+          // Folosim noua funcție fetchUserServices pentru a obține serviciile utilizatorului
+          try {
+            const servicesData = await fetchUserServices(userId);
+            console.log('User services data received:', servicesData);
+            setServices(servicesData || []);
+            console.log('Services state after setting:', servicesData || []);
+          } catch (error) {
+            console.error(`Error fetching services for user ${userId}:`, error);
+          }
 
           // Fetch user's requests
-          const requestsResponse = await fetch(`${API_URL}/requests/user/${userId}`)
-          if (requestsResponse.ok) {
-            const requestsData = await requestsResponse.json()
-            console.log('Requests data:', requestsData)
-            setRequests(requestsData || [])
+          console.log("Fetching requests from:", `${API_URL}/requests/user/${userId}`);
+          try {
+            const requestsData = await fetchUserRequests(userId);
+            console.log('Requests data received:', requestsData);
+            setRequests(requestsData || []);
+          } catch (error) {
+            console.error(`Error fetching requests for user ${userId}:`, error);
           }
         } else {
           // Set current user's profile
+          console.log("Using current user's profile:", user);
           setProfileUser(user)
           setProfileData({
             occupation: user.occupation || '',
@@ -105,21 +135,25 @@ const ProfilePage = () => {
 
           // Fetch current user's services and requests
           const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
-          const [servicesResponse, requestsResponse] = await Promise.all([
-            fetch(`${API_URL}/services/user/${user.id}`),
-            fetch(`${API_URL}/requests/user/${user.id}`)
-          ])
-
-          if (servicesResponse.ok) {
-            const servicesData = await servicesResponse.json()
-            console.log('Services data:', servicesData)
-            setServices(servicesData || [])
+          console.log("Fetching own services from:", `${API_URL}/services/user/${user.id}`);
+          
+          try {
+            // Folosim noua funcție fetchUserServices
+            const servicesData = await fetchUserServices(user.id);
+            console.log('Own services data received:', servicesData);
+            setServices(servicesData || []);
+            console.log('Services state after setting (own profile):', servicesData || []);
+          } catch (error) {
+            console.error("Error fetching own services:", error);
           }
 
-          if (requestsResponse.ok) {
-            const requestsData = await requestsResponse.json()
-            console.log('Requests data:', requestsData)
-            setRequests(requestsData || [])
+          try {
+            // Folosim noua funcție fetchUserRequests
+            const requestsData = await fetchUserRequests(user.id);
+            console.log('Own requests data received:', requestsData);
+            setRequests(requestsData || []);
+          } catch (error) {
+            console.error(`Error fetching requests for user ${user.id}:`, error);
           }
           
           // Fetch favorite services and requests if it's the user's own profile
@@ -455,39 +489,31 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <div className="profile-tabs">
-        <button
-          className={`tab-button ${activeTab === "services" ? "active" : ""}`}
-          onClick={() => setActiveTab("services")}
-        >
-          <Briefcase size={20} />
-          <span>Servicii</span>
-        </button>
-        <button
-          className={`tab-button ${activeTab === "requests" ? "active" : ""}`}
-          onClick={() => setActiveTab("requests")}
-        >
-          <MessageCircle size={20} />
-          <span>Cereri</span>
-        </button>
-        {!isOwnProfile && (
+      {/* Tabs diferite pentru profil propriu vs. profil altcuiva */}
+      {isOwnProfile ? (
+        // Tabs pentru propriul profil
+        <div className="profile-tabs own-profile-tabs">
           <button
-            className={activeTab === "ratings" ? "active" : ""}
-            onClick={() => setActiveTab("ratings")}
+            className={`tab-button ${activeTab === "services" ? "active" : ""}`}
+            onClick={() => setActiveTab("services")}
           >
-            Evaluări
+            <Briefcase size={20} />
+            <span>Serviciile mele</span>
           </button>
-        )}
-        {isOwnProfile && (
+          <button
+            className={`tab-button ${activeTab === "requests" ? "active" : ""}`}
+            onClick={() => setActiveTab("requests")}
+          >
+            <MessageCircle size={20} />
+            <span>Cererile mele</span>
+          </button>
           <button
             className={`tab-button ${activeTab === "settings" ? "active" : ""}`}
             onClick={() => setActiveTab("settings")}
           >
             <Settings size={20} />
-            <span>Setări</span>
+            <span>Editare profil</span>
           </button>
-        )}
-        {isOwnProfile && (
           <button
             className={`tab-button ${activeTab === "favorites" ? "active" : ""}`}
             onClick={() => setActiveTab("favorites")}
@@ -495,14 +521,46 @@ const ProfilePage = () => {
             <Star size={20} />
             <span>Favorite</span>
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        // Tabs pentru profilul altcuiva
+        <div className="profile-tabs other-profile-tabs">
+          <button
+            className={`tab-button ${activeTab === "about" ? "active" : ""}`}
+            onClick={() => setActiveTab("about")}
+          >
+            <User size={20} />
+            <span>Despre</span>
+          </button>
+          <button
+            className={`tab-button ${activeTab === "services" ? "active" : ""}`}
+            onClick={() => setActiveTab("services")}
+          >
+            <Briefcase size={20} />
+            <span>Servicii</span>
+          </button>
+          <button
+            className={`tab-button ${activeTab === "requests" ? "active" : ""}`}
+            onClick={() => setActiveTab("requests")}
+          >
+            <MessageCircle size={20} />
+            <span>Cereri</span>
+          </button>
+          <button
+            className={`tab-button ${activeTab === "ratings" ? "active" : ""}`}
+            onClick={() => setActiveTab("ratings")}
+          >
+            <Star size={20} />
+            <span>Evaluări</span>
+          </button>
+        </div>
+      )}
 
       <div className="profile-content">
         {activeTab === "services" && (
           <div className="services-section">
             <div className="section-header">
-              <h2>Servicii oferite</h2>
+              <h2>{isOwnProfile ? "Serviciile mele" : `Servicii oferite de ${profileUser.firstName}`}</h2>
               {isOwnProfile && (
                 <Link to="/post-service" className="add-button">
                   Adaugă serviciu
@@ -510,6 +568,8 @@ const ProfilePage = () => {
               )}
             </div>
 
+            {console.log("Rendering services section, services:", services)}
+            
             {loading ? (
               <div className="loading-container">
                 <Loader size={48} className="spinner" />
@@ -523,9 +583,9 @@ const ProfilePage = () => {
                   Încearcă din nou
                 </button>
               </div>
-            ) : services.length === 0 ? (
+            ) : !services || services.length === 0 ? (
               <div className="empty-state">
-                <p>Nu există servicii publicate.</p>
+                <p>{isOwnProfile ? "Nu ai publicat niciun serviciu încă." : "Acest utilizator nu a publicat niciun serviciu încă."}</p>
                 {isOwnProfile && (
                   <Link to="/post-service" className="add-button">
                     Adaugă primul tău serviciu
@@ -534,6 +594,7 @@ const ProfilePage = () => {
               </div>
             ) : (
               <div className="services-grid">
+                {console.log("Mapping through services:", services)}
                 {services.map((service) => (
                   <div key={service.id} className="service-card">
                     <div className="service-image-container">
@@ -561,7 +622,7 @@ const ProfilePage = () => {
                           </span>
                         </div>
                       </div>
-                      {service.provider && (
+                      {!isOwnProfile && service.provider && (
                         <div className="service-provider">
                           <img
                             src={getImageUrl(service.provider.image)}
@@ -614,7 +675,7 @@ const ProfilePage = () => {
         {activeTab === "requests" && (
           <div className="requests-section">
             <div className="section-header">
-              <h2>Cereri postate</h2>
+              <h2>{isOwnProfile ? "Cererile mele" : `Cereri postate de ${profileUser.firstName}`}</h2>
               {isOwnProfile && (
                 <Link to="/post-request" className="add-button">
                   Adaugă cerere
@@ -635,9 +696,9 @@ const ProfilePage = () => {
                   Încearcă din nou
                 </button>
               </div>
-            ) : requests.length === 0 ? (
+            ) : !requests || requests.length === 0 ? (
               <div className="empty-state">
-                <p>Nu există cereri postate.</p>
+                <p>{isOwnProfile ? "Nu ai postat nicio cerere încă." : "Acest utilizator nu a postat nicio cerere încă."}</p>
                 {isOwnProfile && (
                   <Link to="/post-request" className="add-button">
                     Adaugă prima ta cerere
@@ -682,7 +743,7 @@ const ProfilePage = () => {
                         </Link>
                         {isOwnProfile && (
                           <Link to={`/edit-request/${request.id}`} className="edit-button">
-                            <Edit size={16} />
+                            <Edit size={16} /> Editează
                           </Link>
                         )}
                       </div>
@@ -698,6 +759,94 @@ const ProfilePage = () => {
           <div className="ratings-tab">
             <h2>Evaluări pentru {profileUser.firstName} {profileUser.lastName}</h2>
             <UserRating userId={userId} />
+          </div>
+        )}
+
+        {activeTab === "about" && !isOwnProfile && (
+          <div className="about-tab">
+            <div className="section-header">
+              <h2>Despre {profileUser.firstName} {profileUser.lastName}</h2>
+            </div>
+            
+            <div className="about-content">
+              {profileUser.bio && (
+                <div className="about-section">
+                  <h3>Biografie</h3>
+                  <p>{profileUser.bio}</p>
+                </div>
+              )}
+              
+              <div className="about-details">
+                {profileUser.occupation && (
+                  <div className="detail-item">
+                    <h4>Ocupație</h4>
+                    <p>{profileUser.occupation}</p>
+                  </div>
+                )}
+                
+                {profileUser.education && (
+                  <div className="detail-item">
+                    <h4>Educație</h4>
+                    <p>{profileUser.education}</p>
+                  </div>
+                )}
+                
+                {profileUser.age && (
+                  <div className="detail-item">
+                    <h4>Vârstă</h4>
+                    <p>{profileUser.age} ani</p>
+                  </div>
+                )}
+                
+                {profileUser.location && (
+                  <div className="detail-item">
+                    <h4>Locație</h4>
+                    <p>{profileUser.location}</p>
+                  </div>
+                )}
+                
+                {profileUser.specialization && (
+                  <div className="detail-item">
+                    <h4>Specializare</h4>
+                    <p>{profileUser.specialization}</p>
+                  </div>
+                )}
+                
+                {profileUser.experience && (
+                  <div className="detail-item">
+                    <h4>Experiență</h4>
+                    <p>{profileUser.experience}</p>
+                  </div>
+                )}
+                
+                {profileUser.languages && (
+                  <div className="detail-item">
+                    <h4>Limbi vorbite</h4>
+                    <p>{profileUser.languages}</p>
+                  </div>
+                )}
+                
+                {profileUser.availability && (
+                  <div className="detail-item">
+                    <h4>Disponibilitate</h4>
+                    <p>{profileUser.availability}</p>
+                  </div>
+                )}
+              </div>
+              
+              {!profileUser.bio && 
+               !profileUser.occupation && 
+               !profileUser.education && 
+               !profileUser.age && 
+               !profileUser.specialization && 
+               !profileUser.experience && 
+               !profileUser.languages && 
+               !profileUser.availability && (
+                <div className="empty-state">
+                  <p>Acest utilizator nu a adăugat încă informații despre el.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -851,39 +1000,57 @@ const ProfilePage = () => {
                 <Loader size={48} className="spinner" />
                 <p>Se încarcă favoritele...</p>
               </div>
-            ) : favoriteServices.length > 0 ? (
+            ) : !favoriteServices || favoriteServices.length === 0 ? (
+              <div className="empty-state">
+                <p>Nu ai niciun serviciu favorit momentan.</p>
+              </div>
+            ) : (
               <div className="services-grid">
                 {favoriteServices.map((service) => (
                   <div key={service.id} className="service-card">
-                    <div className="service-image">
+                    <div className="service-image-container">
                       <img 
                         src={getImageUrl(service.image)} 
                         alt={service.title || 'Service image'} 
                         onError={handleImageError} 
                       />
+                      {service.category && (
+                        <span className="service-category">{service.category}</span>
+                      )}
                     </div>
-                    <div className="service-info">
-                      <h3>{service.title}</h3>
+                    <div className="service-content">
+                      <h3 className="service-title">{service.title}</h3>
                       {service.description && (
                         <p className="service-description">{service.description}</p>
                       )}
-                      <div className="service-details">
+                      <div className="service-meta">
                         {service.location && (
-                          <span><FaMapMarkerAlt /> {service.location}</span>
+                          <div className="service-location">
+                            <FaMapMarkerAlt />
+                            <span>{service.location}</span>
+                          </div>
                         )}
-                        {service.availability && (
-                          <span><FaClock /> {service.availability}</span>
+                        {service.rating && (
+                          <div className="service-rating">
+                            <Star size={16} fill="#ffc939" color="#ffc939" />
+                            <span>{service.rating} ({service.review_count || 0})</span>
+                          </div>
                         )}
                       </div>
-                      <Link to={`/services/${service.id}`} className="view-service-button">
-                        <FaEye /> Vezi serviciul
-                      </Link>
+                      <div className="service-price">
+                        <span className="price-amount">
+                          {service.price} {service.currency}
+                        </span>
+                      </div>
+                      <div className="service-actions">
+                        <Link to={`/services/${service.id}`} className="view-button">
+                          <FaEye /> Vezi serviciul
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="no-content">Nu ai niciun serviciu favorit momentan.</p>
             )}
 
             <div className="section-header">
@@ -894,78 +1061,52 @@ const ProfilePage = () => {
                 <Loader size={48} className="spinner" />
                 <p>Se încarcă favoritele...</p>
               </div>
-            ) : favoriteRequests.length > 0 ? (
+            ) : !favoriteRequests || favoriteRequests.length === 0 ? (
+              <div className="empty-state">
+                <p>Nu ai nicio cerere favorită momentan.</p>
+              </div>
+            ) : (
               <div className="requests-grid">
                 {favoriteRequests.map((request) => (
                   <div key={request.id} className="request-card">
-                    <div className="request-info">
-                      <h3>{request.title}</h3>
-                      <p className="request-description">{request.description}</p>
-                      <div className="request-details">
-                        <span><FaMapMarkerAlt /> {request.location}</span>
-                        <span><FaClock /> {request.deadline}</span>
+                    <div className="request-image-container">
+                      <img 
+                        src={request.images && request.images.length > 0 
+                          ? getImageUrl(request.images[0].image_url) 
+                          : defaultProfileImage}
+                        alt={request.title}
+                        className="request-image"
+                        onError={handleImageError}
+                      />
+                      <span className="request-category">{request.category}</span>
+                    </div>
+                    <div className="request-content">
+                      <h3 className="request-title">{request.title}</h3>
+                      <div className="request-meta">
+                        <div className="request-location">
+                          <FaMapMarkerAlt />
+                          <span>{request.location}</span>
+                        </div>
+                        <div className="request-deadline">
+                          <FaClock />
+                          <span>{request.deadline}</span>
+                        </div>
                       </div>
-                      <Link to={`/requests/${request.id}`} className="view-request-button">
-                        <FaEye /> Vezi cererea
-                      </Link>
+                      <div className="request-budget">
+                        <span className="budget-amount">
+                          {request.budget} {request.currency}
+                        </span>
+                      </div>
+                      <div className="request-actions">
+                        <Link to={`/requests/${request.id}`} className="view-request-button">
+                          <FaEye /> Vezi cererea
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="no-content">Nu ai nicio cerere favorită momentan.</p>
             )}
-          </div>
-        )}
-
-        {activeTab !== "profile" && profileUser.bio && (
-          <div className="profile-bio">
-            <h3>Despre mine</h3>
-            <p>{profileUser.bio}</p>
-          </div>
-        )}
-
-        {activeTab !== "profile" && (
-          <div className="professional-info">
-            <h3>Informații profesionale</h3>
-            <div className="info-grid">
-              {profileUser.occupation && (
-                <div className="info-item">
-                  <h4>Ocupație</h4>
-                  <p>{profileUser.occupation}</p>
-                </div>
-              )}
-              {profileUser.education && (
-                <div className="info-item">
-                  <h4>Educație</h4>
-                  <p>{profileUser.education}</p>
-                </div>
-              )}
-              {profileUser.specialization && (
-                <div className="info-item">
-                  <h4>Specializare</h4>
-                  <p>{profileUser.specialization}</p>
-                </div>
-              )}
-              {profileUser.experience && (
-                <div className="info-item">
-                  <h4>Experiență</h4>
-                  <p>{profileUser.experience}</p>
-                </div>
-              )}
-              {profileUser.languages && (
-                <div className="info-item">
-                  <h4>Limbi vorbite</h4>
-                  <p>{profileUser.languages}</p>
-                </div>
-              )}
-              {profileUser.availability && (
-                <div className="info-item">
-                  <h4>Disponibilitate</h4>
-                  <p>{profileUser.availability}</p>
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
