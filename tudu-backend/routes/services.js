@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { supabase } = require('../db')
-const auth = require('../middleware/auth')
+const { authenticateToken } = require('../middleware/auth')
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
@@ -93,7 +93,7 @@ router.get('/', async (req, res) => {
 })
 
 // Get user's favorite services
-router.get('/favorites', auth, async (req, res) => {
+router.get('/favorites', authenticateToken, async (req, res) => {
   try {
     console.log('Fetching favorite services for user:', req.user.id);
     
@@ -267,7 +267,7 @@ router.get('/user/:userId', async (req, res) => {
 })
 
 // Check if service is favorited
-router.get('/:id/favorite', auth, async (req, res) => {
+router.get('/:id/favorite', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -289,7 +289,7 @@ router.get('/:id/favorite', auth, async (req, res) => {
 });
 
 // Add service to favorites
-router.post('/:id/favorite', auth, async (req, res) => {
+router.post('/:id/favorite', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -345,7 +345,7 @@ router.post('/:id/favorite', auth, async (req, res) => {
 });
 
 // Remove service from favorites
-router.delete('/:id/favorite', auth, async (req, res) => {
+router.delete('/:id/favorite', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -430,7 +430,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // Create a new service
-router.post('/', auth, upload.single('image'), async (req, res) => {
+router.post('/', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const { title, description, category, price, currency, location } = req.body;
     
@@ -503,7 +503,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
 });
 
 // Update a service
-router.put('/:id', auth, upload.single('image'), async (req, res) => {
+router.put('/:id', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, category, price, currency, location, isActive } = req.body;
@@ -603,7 +603,7 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
 });
 
 // Delete a service
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     

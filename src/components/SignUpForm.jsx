@@ -50,7 +50,7 @@ const SignUpForm = () => {
       loginUser(response.user)
       
       // Redirect to home page
-      navigate("/")
+      navigate("/home")
     } catch (error) {
       setError(error.message || "Registration failed. Please try again.")
     } finally {

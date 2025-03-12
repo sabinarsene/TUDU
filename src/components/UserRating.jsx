@@ -105,8 +105,14 @@ const UserRating = ({ userId }) => {
       setIsSubmitting(true);
       setError(null);
       
+      // Verificăm token-ul din localStorage
+      const storedToken = localStorage.getItem('token');
+      console.log("Token from localStorage:", storedToken);
+      console.log("Token from user object:", user.token);
+      
+      // Folosim token-ul din localStorage în loc de cel din user object
       console.log("Submitting rating:", userRating, "for user:", userId);
-      const result = await submitUserRating(userId, userRating, comment, user.token);
+      const result = await submitUserRating(userId, userRating, comment, storedToken);
       console.log("Rating submitted:", result);
       
       setSuccess(true);

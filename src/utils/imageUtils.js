@@ -1,6 +1,8 @@
 // Utility function to get the correct image URL
 export const getImageUrl = (path) => {
-  if (!path) return '/placeholder.svg';
+  if (!path) {
+    return 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+  }
   
   // If it's already a blob URL (for previews)
   if (path.startsWith('blob:')) {
@@ -30,5 +32,5 @@ export const getImageUrl = (path) => {
 
 // Utility function to handle image loading errors
 export const handleImageError = (e) => {
-  e.target.src = '/placeholder.svg';
+  e.target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
 }; 

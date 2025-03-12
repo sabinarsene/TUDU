@@ -13,6 +13,7 @@ import PostRequestPage from "./pages/PostRequestPage"
 import RequestDetailsPage from "./pages/RequestDetailsPage"
 import ProfileSetupPage from "./pages/ProfileSetupPage"
 import SuccessPage from "./pages/SuccessPage"
+import LandingPage from "./pages/LandingPage"
 import "./App.css"
 import { AuthProvider } from "./contexts/AuthContext"
 import ProtectedRoute from "./components/ProtectedRoute"
@@ -38,7 +39,8 @@ function App() {
           <Route path="/request/:requestId" element={<ProtectedRoute><RequestDetailsPage /></ProtectedRoute>} />
           <Route path="/requests/:requestId" element={<ProtectedRoute><RequestDetailsPage /></ProtectedRoute>} />
           <Route path="/success" element={<SuccessPage />} />
-          <Route path="/" element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/" element={<LandingPage />} />
         </Routes>
       </Router>
     </AuthProvider>

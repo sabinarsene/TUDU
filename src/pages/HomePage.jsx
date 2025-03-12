@@ -8,6 +8,7 @@ import Header from "../components/Header"
 import { fetchServices } from "../services/serviceApi"
 import { Loader } from "lucide-react"
 import { getImageUrl, handleImageError } from "../utils/imageUtils"
+import { FaPlus } from 'react-icons/fa'
 
 // Categoriile principale care vor fi afișate mereu
 const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Transport", "Educație"]
@@ -292,9 +293,17 @@ const HomePage = () => {
                     className="provider-image"
                     onError={handleImageError}
                   />
-                  <Link to={`/profile/${service.provider?.id}`} className="provider-name">
-                    {service.provider?.name}
-                  </Link>
+                  <div className="provider-info">
+                    <Link to={`/profile/${service.provider?.id}`} className="provider-name">
+                      {service.provider?.name}
+                    </Link>
+                    {service.provider?.rating && (
+                      <div className="provider-rating">
+                        <Star size={14} fill="#ffc939" color="#ffc939" />
+                        <span>{service.provider.rating} ({service.provider.reviewCount || 0})</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="service-price">
                   <span className="price-amount">
@@ -308,7 +317,7 @@ const HomePage = () => {
       </main>
 
       <Link to="/post-service" className="post-service-button">
-        <Plus size={24} />
+        <FaPlus size={24} />
       </Link>
     </div>
   )

@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 // Service API for handling service-related API calls
 // Folosim window.location.hostname pentru a obține adresa IP sau hostname-ul curent
 export const API_URL = `http://${window.location.hostname}:5000/api`;
@@ -181,57 +183,53 @@ export const submitUserRating = async (userId, rating, comment, token) => {
     const apiUrl = `${API_URL}/users/${userId}/ratings`;
     console.log('API URL:', apiUrl);
     
-    // Adăugăm un timeout pentru a evita blocarea UI-ului
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secunde timeout
-    
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          rating,
-          comment
-        }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries([...response.headers]));
-      
-      if (!response.ok) {
-        // Încercăm să obținem detalii despre eroare
-        try {
-          const errorData = await response.json();
-          console.error('Error response:', errorData);
-          throw new Error(errorData.message || `Error submitting rating: ${response.statusText}`);
-        } catch (jsonError) {
-          console.error('Could not parse error response:', jsonError);
-          throw new Error(`Error submitting rating: ${response.statusText}`);
-        }
-      }
-      
-      const data = await response.json();
-      console.log('Rating submitted successfully:', data);
-      return data;
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      
-      if (fetchError.name === 'AbortError') {
-        console.error('Request timed out after 10 seconds');
-        throw new Error('Cererea a expirat. Serverul nu a răspuns în timp util.');
-      }
-      
-      throw fetchError;
+    // Verificăm dacă avem token
+    if (!token) {
+      console.error('No token provided');
+      throw new Error('Nu ești autentificat');
     }
+    
+    console.log('Using token:', token);
+    
+    // Configurăm axios cu timeout și headers
+    const axiosInstance = axios.create({
+      timeout: 10000, // 10 secunde timeout
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-auth-token': token // pentru compatibilitate
+      }
+    });
+    
+    console.log('Request headers:', axiosInstance.defaults.headers);
+    
+    const response = await axiosInstance.post(apiUrl, {
+      rating,
+      comment
+    });
+    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+    console.log('Rating submitted successfully:', response.data);
+    
+    return response.data;
   } catch (error) {
     console.error(`Error submitting rating for user ${userId}:`, error);
-    throw error;
+    
+    if (error.response) {
+      // Serverul a răspuns cu un status code în afara intervalului 2xx
+      console.error('Server error response:', error.response.data);
+      const errorMessage = error.response.data.message || `Error submitting rating: ${error.response.statusText}`;
+      throw new Error(errorMessage);
+    } else if (error.request) {
+      // Cererea a fost făcută dar nu s-a primit răspuns
+      console.error('No response received:', error.request);
+      throw new Error('Nu s-a putut contacta serverul. Verificați conexiunea la internet.');
+    } else {
+      // Ceva s-a întâmplat la configurarea cererii
+      console.error('Request configuration error:', error.message);
+      throw error;
+    }
   }
 };
 

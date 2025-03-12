@@ -63,55 +63,85 @@ const RequestsPage = () => {
       try {
         setLoading(true)
         const data = await fetchRequests()
+        console.log('Received requests data:', data); // Pentru debugging
         
-        if (!data || data.length === 0) {
-          console.log("No requests found or empty array returned")
-          setRequests([])
-          // Nu setăm eroare, doar afișăm un mesaj în UI
-        } else {
-          setRequests(data)
+        // Ne asigurăm că data este un array valid
+        if (!Array.isArray(data)) {
+          console.error('Received invalid data format:', data);
+          setRequests([]);
+          setError("Format invalid de date. Vă rugăm încercați din nou mai târziu.");
+          return;
         }
         
-        setError(null)
+        if (data.length === 0) {
+          console.log("No requests found");
+          setRequests([]);
+          // Nu setăm eroare, doar afișăm un mesaj în UI
+        } else {
+          // Validăm fiecare request înainte de a-l adăuga în state
+          const validRequests = data.filter(request => {
+            if (!request || typeof request !== 'object') return false;
+            // Verificăm că avem toate câmpurile necesare
+            return (
+              'category' in request &&
+              'budget' in request &&
+              'deadline' in request &&
+              'location' in request
+            );
+          });
+          
+          console.log(`Found ${validRequests.length} valid requests out of ${data.length}`);
+          setRequests(validRequests);
+        }
+        
+        setError(null);
       } catch (err) {
-        console.error("Error fetching requests:", err)
-        setError("Nu am putut încărca cererile. Vă rugăm încercați din nou mai târziu.")
-        setRequests([]) // Asigurăm că avem un array gol în caz de eroare
+        console.error("Error fetching requests:", err);
+        setError("Nu am putut încărca cererile. Vă rugăm încercați din nou mai târziu.");
+        setRequests([]); // Asigurăm că avem un array gol în caz de eroare
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    getRequests()
-  }, [])
+    getRequests();
+  }, []);
 
   // Filter requests based on all criteria
   const filteredRequests = requests.filter((request) => {
-    // Category filter
-    if (selectedCategory !== "Toate" && request.category !== selectedCategory) {
-      return false
-    }
+    try {
+      // Verificăm că request este valid înainte de a-l filtra
+      if (!request || typeof request !== 'object') return false;
 
-    // Budget range filter
-    if (filters.budgetRange) {
-      const requestBudget = parseFloat(request.budget)
-      if (requestBudget < filters.budgetRange.min || requestBudget > filters.budgetRange.max) {
-        return false
+      // Category filter
+      if (selectedCategory !== "Toate" && request.category !== selectedCategory) {
+        return false;
       }
-    }
 
-    // Deadline filter
-    if (filters.deadline && !request.deadline.includes(filters.deadline.value)) {
-      return false
-    }
+      // Budget range filter
+      if (filters.budgetRange) {
+        const requestBudget = parseFloat(request.budget);
+        if (isNaN(requestBudget) || requestBudget < filters.budgetRange.min || requestBudget > filters.budgetRange.max) {
+          return false;
+        }
+      }
 
-    // Location filter
-    if (filters.location && !request.location.toLowerCase().includes(filters.location.toLowerCase())) {
-      return false
-    }
+      // Deadline filter
+      if (filters.deadline && (!request.deadline || !request.deadline.includes(filters.deadline.value))) {
+        return false;
+      }
 
-    return true
-  })
+      // Location filter
+      if (filters.location && (!request.location || !request.location.toLowerCase().includes(filters.location.toLowerCase()))) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error filtering request:', error, request);
+      return false;
+    }
+  });
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
@@ -297,19 +327,38 @@ const RequestsPage = () => {
               </div>
 
               <div className="request-user">
-                <img 
-                  src={getImageUrl(request.user.image)} 
-                  alt={request.user.name}
-                  onError={handleImageError}
-                  className="user-avatar"
-                />
-                <span className="user-name">{request.user.name}</span>
-                {request.user.rating && (
-                  <div className="user-rating">
-                    <Star size={14} fill="#FFD700" />
-                    <span>{request.user.rating.toFixed(1)}</span>
-                    <span className="review-count">({request.user.reviewCount})</span>
-                  </div>
+                {request.user && (
+                  <>
+                    <img 
+                      src={getImageUrl(request.user.image)} 
+                      alt={request.user.name || 'User avatar'}
+                      onError={handleImageError}
+                      className="user-avatar"
+                    />
+                    <div className="user-info">
+                      <span className="user-name">{request.user.name || 'Utilizator'}</span>
+                      <div className="ratings-container">
+                        {request.user.rating !== undefined && (
+                          <div className="user-rating" title="Rating utilizator">
+                            <Star size={14} fill="#FFD700" />
+                            <span>{Number(request.user.rating).toFixed(1)}</span>
+                            {request.user.review_count !== undefined && (
+                              <span className="review-count">({request.user.review_count})</span>
+                            )}
+                          </div>
+                        )}
+                        {request.rating !== undefined && (
+                          <div className="service-rating" title="Rating serviciu">
+                            <Star size={14} fill="#4CAF50" />
+                            <span>{Number(request.rating).toFixed(1)}</span>
+                            {request.review_count !== undefined && (
+                              <span className="review-count">({request.review_count})</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </Link>

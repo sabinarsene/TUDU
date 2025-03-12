@@ -3,7 +3,7 @@ const router = express.Router()
 const multer = require('multer')
 const path = require('path')
 const { supabase, supabaseAdmin } = require('../db')
-const auth = require('../middleware/auth')
+const { authenticateToken } = require('../middleware/auth')
 const fs = require('fs')
 const { v4: uuidv4 } = require('uuid')
 
@@ -39,7 +39,7 @@ const upload = multer({
 })
 
 // Endpoint pentru încărcarea imaginii de profil
-router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
+router.post('/upload-image', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -265,7 +265,7 @@ router.get('/:userId', async (req, res) => {
 })
 
 // Endpoint pentru configurarea profilului (modificat din /setup în /)
-router.post('/', auth, async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const {
       occupation,
@@ -319,7 +319,7 @@ router.post('/', auth, async (req, res) => {
 })
 
 // Endpoint pentru a obține data de membru
-router.get('/member-since', auth, async (req, res) => {
+router.get('/member-since', authenticateToken, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('users')
@@ -343,7 +343,7 @@ router.get('/member-since', auth, async (req, res) => {
 })
 
 // Get user's favorite services
-router.get('/services/favorites', auth, async (req, res) => {
+router.get('/services/favorites', authenticateToken, async (req, res) => {
   try {
     console.log('Fetching favorite services for user:', req.user.id);
     
@@ -420,7 +420,7 @@ router.get('/services/favorites', auth, async (req, res) => {
 });
 
 // Get user's favorite requests
-router.get('/requests/favorites', auth, async (req, res) => {
+router.get('/requests/favorites', authenticateToken, async (req, res) => {
   try {
     // Forward the request to the requests router
     const requestsRouter = require('./requests');
@@ -437,7 +437,7 @@ router.get('/requests/favorites', auth, async (req, res) => {
 });
 
 // Add service to favorites
-router.post('/services/:serviceId/favorite', auth, async (req, res) => {
+router.post('/services/:serviceId/favorite', authenticateToken, async (req, res) => {
   try {
     const { serviceId } = req.params;
     const userId = req.user.id;
@@ -482,7 +482,7 @@ router.post('/services/:serviceId/favorite', auth, async (req, res) => {
 });
 
 // Remove service from favorites
-router.delete('/services/:serviceId/favorite', auth, async (req, res) => {
+router.delete('/services/:serviceId/favorite', authenticateToken, async (req, res) => {
   try {
     const { serviceId } = req.params;
     const userId = req.user.id;
@@ -509,7 +509,7 @@ router.delete('/services/:serviceId/favorite', auth, async (req, res) => {
 });
 
 // Check if service is favorited
-router.get('/services/:serviceId/favorite', auth, async (req, res) => {
+router.get('/services/:serviceId/favorite', authenticateToken, async (req, res) => {
   try {
     const { serviceId } = req.params;
     const userId = req.user.id;

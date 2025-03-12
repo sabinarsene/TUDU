@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { supabase } = require('../db');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -96,7 +96,7 @@ router.post('/register', async (req, res) => {
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert([userData])
-      .select('id, first_name, last_name, email')
+      .select('id, first_name, last_name, email, member_since')
       .single();
 
     if (insertError) {
@@ -128,7 +128,8 @@ router.post('/register', async (req, res) => {
         id: newUser.id,
         firstName: newUser.first_name,
         lastName: newUser.last_name,
-        email: newUser.email
+        email: newUser.email,
+        memberSince: newUser.member_since
       }
     });
   } catch (error) {
@@ -211,7 +212,8 @@ router.post('/login', async (req, res) => {
         languages: user.languages,
         availability: user.availability,
         rating: user.rating,
-        reviewCount: user.review_count
+        reviewCount: user.review_count,
+        memberSince: user.member_since
       }
     });
   } catch (error) {
@@ -221,7 +223,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Protected route to get user profile
-router.get('/profile', auth, async (req, res) => {
+router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('users')
@@ -242,7 +244,8 @@ router.get('/profile', auth, async (req, res) => {
         languages,
         availability,
         rating,
-        review_count
+        review_count,
+        member_since
       `)
       .eq('id', req.user.id)
       .single();
@@ -268,7 +271,8 @@ router.get('/profile', auth, async (req, res) => {
       languages: user.languages,
       availability: user.availability,
       rating: user.rating,
-      reviewCount: user.review_count
+      reviewCount: user.review_count,
+      memberSince: user.member_since
     });
   } catch (error) {
     console.error(error);

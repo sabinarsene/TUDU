@@ -21,21 +21,25 @@ export const fetchRequests = async () => {
       responseData = await response.json();
     } catch (jsonError) {
       console.error('Error parsing JSON response:', jsonError);
-      if (!response.ok) {
-        throw new Error(`Error fetching requests: ${response.statusText}`);
-      }
-      throw jsonError;
+      return [];
     }
     
     if (!response.ok) {
       console.error('Server returned error:', responseData);
-      throw new Error(responseData.message || `Error fetching requests: ${response.statusText}`);
+      return [];
     }
     
-    return responseData;
+    // Ne asigurăm că returnăm întotdeauna un array
+    if (Array.isArray(responseData)) {
+      return responseData;
+    } else if (responseData && responseData.requests) {
+      return responseData.requests;
+    } else {
+      console.error('Unexpected response format:', responseData);
+      return [];
+    }
   } catch (error) {
     console.error('Error fetching requests:', error);
-    // Returnează un array gol în loc să arunci eroarea, pentru a evita blocarea UI-ului
     return [];
   }
 };

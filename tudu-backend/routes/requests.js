@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { supabase } = require('../db')
-const auth = require('../middleware/auth')
+const { authenticateToken } = require('../middleware/auth')
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
@@ -66,8 +66,61 @@ function convertDeadlineToTimestamp(deadlineText) {
   return new Date(deadlineText).toISOString()
 }
 
+// Get all requests
+router.get('/', async (req, res) => {
+  try {
+    const { data: requests, error } = await supabase
+      .from('requests')
+      .select(`
+        *,
+        user:user_id (
+          id,
+          first_name,
+          last_name,
+          profile_image,
+          rating,
+          review_count
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const formattedRequests = requests.map(request => ({
+      id: request.id,
+      title: request.title,
+      description: request.description,
+      category: request.category,
+      budget: request.budget,
+      currency: request.currency,
+      location: request.location,
+      deadline: request.deadline,
+      deadlineFormatted: formatDeadline(request.deadline),
+      image: request.image,
+      status: request.status,
+      createdAt: request.created_at,
+      timeAgo: getTimeAgo(request.created_at),
+      user: {
+        id: request.user.id,
+        name: `${request.user.first_name} ${request.user.last_name}`,
+        profileImage: request.user.profile_image,
+        rating: request.user.rating,
+        reviewCount: request.user.review_count
+      }
+    }));
+
+    res.json({ requests: formattedRequests });
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    res.status(500).json({ 
+      message: 'Error fetching requests',
+      error: error.message 
+    });
+  }
+});
+
 // Get user's favorite requests (must be first)
-router.get('/favorites', auth, async (req, res) => {
+router.get('/favorites', authenticateToken, async (req, res) => {
   try {
     // Get favorite request IDs
     const { data: favorites, error: favoritesError } = await supabase
@@ -142,7 +195,7 @@ router.get('/favorites', auth, async (req, res) => {
 });
 
 // Now the specific ID routes
-router.get('/:id/favorite', auth, async (req, res) => {
+router.get('/:id/favorite', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -172,7 +225,7 @@ router.get('/:id/favorite', auth, async (req, res) => {
   }
 });
 
-router.post('/:id/favorite', auth, async (req, res) => {
+router.post('/:id/favorite', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -233,7 +286,7 @@ router.post('/:id/favorite', auth, async (req, res) => {
   }
 });
 
-router.delete('/:id/favorite', auth, async (req, res) => {
+router.delete('/:id/favorite', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -368,108 +421,8 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-// Get all requests with user information
-router.get('/', async (req, res) => {
-  try {
-    const { data: requests, error } = await supabase
-      .from('requests')
-      .select(`
-        *,
-        user:user_id (
-          id,
-          first_name,
-          last_name,
-          profile_image,
-          rating,
-          review_count
-        )
-      `)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Supabase error fetching requests:', error)
-      return res.status(500).json({ 
-        message: 'Error fetching requests from database',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      })
-    }
-
-    // Verificăm dacă avem date valide
-    if (!requests || !Array.isArray(requests)) {
-      console.error('Invalid requests data:', requests)
-      return res.status(500).json({ message: 'Invalid data format received from database' })
-    }
-
-    // Format the response
-    try {
-      const formattedRequests = requests.map(request => {
-        // Verificăm dacă request.user există
-        if (!request.user) {
-          return {
-            id: request.id,
-            title: request.title,
-            description: request.description,
-            category: request.category,
-            budget: request.budget,
-            currency: request.currency,
-            location: request.location,
-            deadline: formatDeadline(request.deadline),
-            status: request.status,
-            created_at: request.created_at,
-            updated_at: request.updated_at,
-            postedAt: getTimeAgo(request.created_at),
-            user: {
-              id: request.user_id,
-              name: 'Utilizator necunoscut',
-              image: null,
-              rating: 0,
-              reviewCount: 0
-            }
-          }
-        }
-
-        return {
-          id: request.id,
-          title: request.title,
-          description: request.description,
-          category: request.category,
-          budget: request.budget,
-          currency: request.currency,
-          location: request.location,
-          deadline: formatDeadline(request.deadline),
-          status: request.status,
-          created_at: request.created_at,
-          updated_at: request.updated_at,
-          postedAt: getTimeAgo(request.created_at),
-          user: {
-            id: request.user.id,
-            name: `${request.user.first_name} ${request.user.last_name ? request.user.last_name.charAt(0) + '.' : ''}`,
-            image: request.user.profile_image,
-            rating: request.user.rating,
-            reviewCount: request.user.review_count
-          }
-        }
-      })
-
-      res.json(formattedRequests)
-    } catch (formatError) {
-      console.error('Error formatting requests:', formatError)
-      res.status(500).json({ 
-        message: 'Error formatting request data',
-        error: process.env.NODE_ENV === 'development' ? formatError.message : undefined
-      })
-    }
-  } catch (error) {
-    console.error('Error fetching requests:', error)
-    res.status(500).json({ 
-      message: 'Server error processing requests',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    })
-  }
-})
-
 // Create a new request
-router.post('/', auth, upload.single('image'), async (req, res) => {
+router.post('/', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const { title, description, category, budget, currency, location, deadline } = req.body;
     

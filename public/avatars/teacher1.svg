@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#bbdefb"/>
+      <stop offset="100%" style="stop-color:#90caf9"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <circle cx="100" cy="100" r="100" fill="url(#bg)"/>
+  
+  <!-- Face Shape -->
+  <circle cx="100" cy="85" r="60" fill="#ffccbc"/>
+  
+  <!-- Hair -->
+  <path d="M40,85 Q100,140 160,85 Q160,25 100,25 Q40,25 40,85" fill="#795548"/>
+  
+  <!-- Eyes -->
+  <g transform="translate(100,75)">
+    <!-- Left Eye -->
+    <circle cx="-20" cy="0" r="8" fill="#ffffff"/>
+    <circle cx="-20" cy="0" r="4" fill="#795548"/>
+    <!-- Right Eye -->
+    <circle cx="20" cy="0" r="8" fill="#ffffff"/>
+    <circle cx="20" cy="0" r="4" fill="#795548"/>
+    <!-- Glasses -->
+    <path d="M-35,-5 L-5,-5 M5,-5 L35,-5" stroke="#795548" stroke-width="2" fill="none"/>
+    <circle cx="-20" cy="0" r="15" stroke="#795548" stroke-width="2" fill="none"/>
+    <circle cx="20" cy="0" r="15" stroke="#795548" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Smile -->
+  <path d="M85,100 Q100,120 115,100" stroke="#795548" stroke-width="3" fill="none"/>
+  
+  <!-- Text -->
+  <text x="100" y="170" font-family="Arial" font-size="24" fill="#1565c0" text-anchor="middle" font-weight="bold">MP</text>
+</svg> 

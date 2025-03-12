@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a5d6a7"/>
+      <stop offset="100%" style="stop-color:#66bb6a"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <circle cx="100" cy="100" r="100" fill="url(#bg)"/>
+  
+  <!-- Face Shape -->
+  <circle cx="100" cy="85" r="60" fill="#fff3e0"/>
+  
+  <!-- Hair -->
+  <path d="M40,60 Q100,130 160,60 Q160,20 100,20 Q40,20 40,60" fill="#5d4037"/>
+  
+  <!-- Eyes -->
+  <g transform="translate(100,75)">
+    <!-- Left Eye -->
+    <circle cx="-20" cy="0" r="8" fill="#ffffff"/>
+    <circle cx="-20" cy="0" r="4" fill="#5d4037"/>
+    <!-- Right Eye -->
+    <circle cx="20" cy="0" r="8" fill="#ffffff"/>
+    <circle cx="20" cy="0" r="4" fill="#5d4037"/>
+  </g>
+  
+  <!-- Smile -->
+  <path d="M80,95 Q100,115 120,95" stroke="#5d4037" stroke-width="3" fill="none"/>
+  
+  <!-- Bandana -->
+  <path d="M40,45 Q100,35 160,45" stroke="#4caf50" stroke-width="10" fill="none"/>
+  <path d="M155,45 L170,60" stroke="#4caf50" stroke-width="6" fill="none"/>
+  
+  <!-- Text -->
+  <text x="100" y="170" font-family="Arial" font-size="24" fill="#2e7d32" text-anchor="middle" font-weight="bold">ED</text>
+</svg> 

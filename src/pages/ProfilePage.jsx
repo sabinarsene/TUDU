@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { Star, Settings, Edit, MapPin, Calendar, MessageCircle, Loader, AlertTriangle, Trash2, LogOut, Briefcase, User } from "lucide-react"
+import { Star, Settings, Edit, MapPin, Calendar, MessageCircle, Loader, AlertTriangle, Trash2, LogOut, Briefcase, User, Clock } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import "./ProfilePage.css"
 import { deleteService, fetchUserServices } from "../services/serviceApi"
-import { fetchUserRequests } from "../services/requestApi"
+import { fetchUserRequests, deleteRequest } from "../services/requestApi"
 import { FaMapMarkerAlt, FaClock, FaEye } from 'react-icons/fa'
 import defaultProfileImage from '../assets/default-profile.jpg'
 import UserRating from "../components/UserRating"
@@ -44,6 +44,7 @@ const ProfilePage = () => {
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deletingServiceId, setDeletingServiceId] = useState(null)
+  const [deletingRequestId, setDeletingRequestId] = useState(null)
 
   // Set default tab based on whether it's own profile or not
   useEffect(() => {
@@ -66,6 +67,38 @@ const ProfilePage = () => {
         month: 'long',
         year: 'numeric'
       });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Dată necunoscută';
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return 'Dată necunoscută';
+    
+    try {
+      const postDate = new Date(date);
+      if (isNaN(postDate.getTime())) {
+        return 'Dată necunoscută';
+      }
+      
+      const now = new Date();
+      const diffTime = Math.abs(now - postDate);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) {
+        return 'Astăzi';
+      } else if (diffDays === 1) {
+        return 'Ieri';
+      } else if (diffDays < 7) {
+        return `Acum ${diffDays} zile`;
+      } else {
+        return postDate.toLocaleDateString('ro-RO', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Dată necunoscută';
@@ -369,6 +402,37 @@ const ProfilePage = () => {
     } finally {
       setIsDeleting(false);
       setDeletingServiceId(null);
+    }
+  };
+
+  const handleDeleteRequest = async (requestId) => {
+    if (!window.confirm('Ești sigur că vrei să ștergi această cerere? Această acțiune nu poate fi anulată.')) {
+      return;
+    }
+    
+    try {
+      setIsDeleting(true);
+      setDeletingRequestId(requestId);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Nu ești autentificat');
+      }
+      
+      await deleteRequest(requestId, token);
+      
+      // Actualizăm lista de cereri după ștergere
+      setRequests(requests.filter(request => request.id !== requestId));
+      
+      // Afișăm un mesaj de succes temporar
+      alert('Cererea a fost ștearsă cu succes!');
+      
+    } catch (error) {
+      console.error('Error deleting request:', error);
+      alert('A apărut o eroare la ștergerea cererii. Te rugăm să încerci din nou.');
+    } finally {
+      setIsDeleting(false);
+      setDeletingRequestId(null);
     }
   };
 
@@ -708,47 +772,61 @@ const ProfilePage = () => {
             ) : (
               <div className="requests-grid">
                 {requests.map((request) => (
-                  <div key={request.id} className="request-card">
-                    <div className="request-image-container">
-                      <img
-                        src={request.images && request.images.length > 0 
-                          ? getImageUrl(request.images[0].image_url) 
-                          : defaultProfileImage}
-                        alt={request.title}
-                        className="request-image"
-                        onError={handleImageError}
-                      />
-                      <span className="request-category">{request.category}</span>
-                    </div>
-                    <div className="request-content">
-                      <h3 className="request-title">{request.title}</h3>
-                      <div className="request-meta">
-                        <div className="request-location">
-                          <FaMapMarkerAlt />
-                          <span>{request.location}</span>
-                        </div>
-                        <div className="request-deadline">
-                          <FaClock />
-                          <span>{request.deadline}</span>
-                        </div>
+                  <Link to={`/request/${request.id}`} key={request.id} className="request-card">
+                    <div className="request-header">
+                      <div className="request-category">{request.category}</div>
+                      <div className="request-time">
+                        <Clock size={14} />
+                        <span>{request.postedAt || formatDate(request.created_at)}</span>
                       </div>
+                    </div>
+
+                    <h3 className="request-title">{request.title}</h3>
+
+                    <div className="request-location">
+                      <MapPin size={16} />
+                      <span>{request.location}</span>
+                    </div>
+
+                    <p className="request-description">{request.description}</p>
+
+                    <div className="request-footer">
                       <div className="request-budget">
                         <span className="budget-amount">
-                          {request.budget} {request.currency}
+                          {request.budget} {request.currency || 'RON'}
                         </span>
                       </div>
-                      <div className="request-actions">
-                        <Link to={`/requests/${request.id}`} className="view-request-button">
-                          <FaEye /> Vezi cererea
-                        </Link>
-                        {isOwnProfile && (
-                          <Link to={`/edit-request/${request.id}`} className="edit-button">
-                            <Edit size={16} /> Editează
-                          </Link>
-                        )}
+
+                      <div className="request-deadline">
+                        <Clock size={16} />
+                        <span>Termen: {request.deadline}</span>
                       </div>
                     </div>
-                  </div>
+
+                    {isOwnProfile && (
+                      <div className="request-actions">
+                        <Link to={`/edit-request/${request.id}`} className="edit-button">
+                          <Edit size={16} />
+                          <span>Editează</span>
+                        </Link>
+                        <button
+                          className="delete-button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleDeleteRequest(request.id);
+                          }}
+                          disabled={isDeleting && deletingRequestId === request.id}
+                        >
+                          {isDeleting && deletingRequestId === request.id ? (
+                            <Loader size={16} className="spinner" />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                          <span>Șterge</span>
+                        </button>
+                      </div>
+                    )}
+                  </Link>
                 ))}
               </div>
             )}

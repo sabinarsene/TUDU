@@ -210,11 +210,14 @@ async function createExecSqlFunction() {
     console.log('Crearea funcției exec_sql...');
     
     // Verificăm dacă funcția există deja
-    const { data: existingFunction, error: checkError } = await supabaseAdmin.rpc('exec_sql', { sql: 'SELECT 1' }).catch(() => ({ data: null }));
-    
-    if (existingFunction) {
-      console.log('Funcția exec_sql există deja.');
-      return;
+    try {
+      const { data: existingFunction } = await supabaseAdmin.rpc('exec_sql', { sql: 'SELECT 1' });
+      if (existingFunction) {
+        console.log('Funcția exec_sql există deja.');
+        return;
+      }
+    } catch (checkError) {
+      // Funcția nu există, continuăm cu crearea ei
     }
     
     // Creăm funcția exec_sql
@@ -230,33 +233,41 @@ async function createExecSqlFunction() {
       $$;
     `;
     
-    const { error } = await supabaseAdmin.from('_exec_sql').select('*').limit(1);
-    
-    if (error) {
-      // Dacă tabela nu există, o creăm
-      await supabaseAdmin.rpc('exec_sql_direct', { sql: createFunctionSql }).catch(async () => {
-        // Dacă funcția exec_sql_direct nu există, folosim REST API
-        const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql_direct`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'apikey': supabaseServiceKey
-          },
-          body: JSON.stringify({ sql: createFunctionSql })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to create exec_sql function: ${response.statusText}`);
-        }
-      });
+    try {
+      const { error } = await supabaseAdmin.from('_exec_sql').select('*').limit(1);
       
-      console.log('Funcția exec_sql a fost creată cu succes.');
-    } else {
-      console.log('Tabela _exec_sql există deja.');
+      if (error) {
+        // Dacă tabela nu există, încercăm să creăm funcția
+        try {
+          await supabaseAdmin.rpc('exec_sql_direct', { sql: createFunctionSql });
+          console.log('Funcția exec_sql a fost creată cu succes folosind RPC.');
+        } catch (rpcError) {
+          // Dacă RPC eșuează, încercăm REST API
+          const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql_direct`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': supabaseServiceKey
+            },
+            body: JSON.stringify({ sql: createFunctionSql })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to create exec_sql function: ${response.statusText}`);
+          }
+          console.log('Funcția exec_sql a fost creată cu succes folosind REST API.');
+        }
+      } else {
+        console.log('Tabela _exec_sql există deja.');
+      }
+    } catch (error) {
+      console.error('Eroare la verificarea/crearea tabelei _exec_sql:', error);
+      throw error;
     }
   } catch (error) {
     console.error('Eroare la crearea funcției exec_sql:', error);
+    // Nu aruncăm eroarea mai departe pentru a permite serverului să pornească
   }
 }
 

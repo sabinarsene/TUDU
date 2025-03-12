@@ -27,18 +27,18 @@ CREATE OR REPLACE FUNCTION update_user_average_rating()
 RETURNS TRIGGER AS $$
 DECLARE
     avg_rating DECIMAL(3, 2);
-    review_count INTEGER;
+    total_reviews INTEGER;
 BEGIN
     -- Calculăm ratingul mediu pentru utilizator
     SELECT AVG(rating), COUNT(*)
-    INTO avg_rating, review_count
+    INTO avg_rating, total_reviews
     FROM user_ratings
     WHERE user_id = NEW.user_id;
     
     -- Actualizăm ratingul și numărul de recenzii în tabela users
     UPDATE users
     SET rating = COALESCE(avg_rating, 0),
-        review_count = review_count
+        review_count = total_reviews
     WHERE id = NEW.user_id;
     
     RETURN NEW;

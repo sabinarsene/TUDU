@@ -26,7 +26,7 @@ const LoginForm = () => {
     try {
       const response = await login(email, password)
       loginUser(response.user)
-      navigate("/") // Redirecționare către pagina principală după login
+      navigate("/home") // Redirecționare către pagina home după login
     } catch (error) {
       setError(error.message || "Login failed. Please check your credentials.")
     } finally {

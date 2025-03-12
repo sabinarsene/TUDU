@@ -301,14 +301,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -316,40 +316,39 @@
 .user-info {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .user-name {
   font-weight: 500;
-  color: var(--dark-blue);
-  margin-bottom: 2px;
+  color: #374151;
 }
 
-.user-rating {
+.ratings-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-rating, .service-rating {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
-.rating-value {
-  font-weight: 500;
+.user-rating {
+  color: #B8860B; /* Culoare pentru rating utilizator */
 }
 
-.rating-stars {
-  display: flex;
-}
-
-.star {
-  color: #ccc;
-  font-size: 14px;
-}
-
-.star.filled {
-  color: #ffc939;
+.service-rating {
+  color: #2E7D32; /* Culoare pentru rating serviciu */
 }
 
 .review-count {
-  color: #666;
+  color: #9ca3af;
+  margin-left: 2px;
 }
 
 /* Îmbunătățim aspectul butoanelor de acțiune */
