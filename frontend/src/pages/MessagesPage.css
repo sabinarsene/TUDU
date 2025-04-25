@@ -281,6 +281,8 @@
   flex-direction: column;
   background-color: #f8f9fa;
   height: calc(100vh - 130px); /* Adjust based on header height */
+  min-height: 100%;
+  overflow-y: auto;
 }
 
 .messages-list {

@@ -1,52 +1,97 @@
 import React from 'react';
-import { Box, VStack, Text, Avatar, Flex } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
+import { getImageUrl, getProfileImageUrl, handleImageError } from '../../utils/imageUtils';
+import './ChatList.css';
 
-export function ChatList({ chats, selectedChat, onSelectChat }) {
+const ChatList = ({ conversations, activeConversation, onSelectConversation }) => {
+  const navigate = useNavigate();
+
+  if (!conversations || conversations.length === 0) {
+    return (
+      <div className="no-conversations">
+        <p>No conversations yet</p>
+        <p className="hint">Messages will appear here when you start chatting with someone</p>
+      </div>
+    );
+  }
+
+  const handleSelectConversation = (conversation) => {
+    if (onSelectConversation) {
+      onSelectConversation(conversation);
+    } else {
+      navigate(`/messages/${conversation.user.id}`);
+    }
+  };
+
   return (
-    <VStack spacing={0} align="stretch" className="chat-list">
-      {chats.map((chat) => (
-        <Box
-          key={chat.userId}
-          className={`chat-item ${selectedChat?.userId === chat.userId ? 'active' : ''}`}
-          onClick={() => onSelectChat(chat)}
-          p={3}
-          cursor="pointer"
-          _hover={{ bg: 'gray.50' }}
-          bg={selectedChat?.userId === chat.userId ? 'blue.50' : 'white'}
+    <div className="chat-list" style={{ maxHeight: '100%', overflowY: 'auto' }}>
+      {conversations.map((conversation) => (
+        <div
+          key={conversation.user.id}
+          className={`conversation-item ${
+            activeConversation === conversation.user.id ? 'active' : ''
+          }`}
+          onClick={() => handleSelectConversation(conversation)}
         >
-          <Flex align="center">
-            <Avatar size="sm" name={chat.userName} src={chat.userAvatar} />
-            <Box ml={3} flex={1}>
-              <Text fontWeight="medium">{chat.userName}</Text>
-              <Text fontSize="sm" color="gray.500" noOfLines={1}>
-                {chat.lastMessage}
-              </Text>
-            </Box>
-            <Box>
-              <Text fontSize="xs" color="gray.500">
-                {new Date(chat.timestamp).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </Text>
-              {chat.unreadCount > 0 && (
-                <Box
-                  bg="blue.500"
-                  color="white"
-                  borderRadius="full"
-                  px={2}
-                  py={1}
-                  fontSize="xs"
-                  textAlign="center"
-                  mt={1}
-                >
-                  {chat.unreadCount}
-                </Box>
+          <div className="conversation-avatar">
+            <img
+              src={getProfileImageUrl(conversation.user)}
+              alt={conversation.user.name}
+              onError={handleImageError}
+            />
+            {conversation.user.isOnline && (
+              <span className="online-indicator" />
+            )}
+          </div>
+          
+          <div className="conversation-content">
+            <div className="conversation-header">
+              <h3 className="conversation-name">{conversation.user.name}</h3>
+              <span className="conversation-time">
+                {formatMessageTime(conversation.lastMessage.time)}
+              </span>
+            </div>
+            
+            <div className="conversation-preview">
+              <p className="conversation-last-message">
+                {conversation.lastMessage.sender === 'you' && <span>You: </span>}
+                {conversation.lastMessage.text}
+              </p>
+              
+              {conversation.unreadCount > 0 && (
+                <span className="unread-badge">{conversation.unreadCount}</span>
               )}
-            </Box>
-          </Flex>
-        </Box>
+            </div>
+          </div>
+        </div>
       ))}
-    </VStack>
+    </div>
   );
+};
+
+// Helper function to format the message time
+function formatMessageTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  
+  // Today: show time
+  if (diffInDays === 0) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  // Yesterday: show "Yesterday"
+  if (diffInDays === 1) {
+    return 'Yesterday';
+  }
+  
+  // Within last 7 days: show day name
+  if (diffInDays < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  }
+  
+  // Otherwise: show date
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
+
+export default ChatList;

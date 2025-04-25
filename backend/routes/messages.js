@@ -315,6 +315,92 @@ router.delete('/:messageId', authenticateToken, async (req, res) => {
   }
 });
 
+// Mark all messages from a sender as read
+router.post('/mark-read/:senderId', authenticateToken, async (req, res) => {
+  const currentUserId = req.user?.id;
+  const senderId = req.params.senderId;
+
+  if (!currentUserId || !senderId) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('sender_id', senderId)
+      .eq('receiver_id', currentUserId)
+      .is('read_at', null)
+      .select('id');
+
+    if (error) {
+      console.error('[Messages] Database error:', error);
+      return res.status(500).json({ error: 'Failed to mark messages as read' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Marked ${data.length} messages as read`,
+      messageIds: data.map(m => m.id)
+    });
+  } catch (error) {
+    console.error('[Messages] Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mark all messages in a conversation as read
+router.post('/conversation/:conversationId/mark-all-read', authenticateToken, async (req, res) => {
+  const currentUserId = req.user?.id;
+  const conversationId = req.params.conversationId;
+
+  if (!currentUserId || !conversationId) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    // Get conversation details to verify the current user is part of it
+    const { data: conversation, error: conversationError } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', conversationId)
+      .single();
+
+    if (conversationError || !conversation) {
+      console.error('[Messages] Conversation error:', conversationError);
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Verify current user is part of the conversation
+    if (conversation.user1_id !== currentUserId && conversation.user2_id !== currentUserId) {
+      return res.status(403).json({ error: 'You are not authorized to mark messages in this conversation' });
+    }
+
+    // Mark all unread messages sent TO the current user as read
+    const { data, error } = await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .eq('receiver_id', currentUserId)
+      .is('read_at', null)
+      .select('id');
+
+    if (error) {
+      console.error('[Messages] Database error:', error);
+      return res.status(500).json({ error: 'Failed to mark messages as read' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Marked ${data.length} messages as read in conversation ${conversationId}`,
+      messageIds: data.map(m => m.id)
+    });
+  } catch (error) {
+    console.error('[Messages] Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Test authentication route
 router.get('/test-auth', authenticateToken, (req, res) => {
     if (!req.user?.id) {

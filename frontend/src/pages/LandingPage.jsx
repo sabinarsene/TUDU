@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Users, Clock, Shield, MessageCircle, FileText, CheckCircle } from 'react-feather';
+import { ChevronRight } from 'lucide-react';
+import { getProfileImageUrl, handleImageError } from '../utils/imageUtils';
 import logo from '../assets/images/logo_wide_white.png';
 import './LandingPage.css';
 
@@ -110,16 +112,14 @@ const LandingPage = () => {
               </div>
               <div className="service-details">
                 <h3>{service.title}</h3>
-                <div className="provider-info">
-                  <img src={service.provider.image} alt={service.provider.name} className="provider-avatar" />
-                  <div className="provider-details">
-                    <span className="provider-name">{service.provider.name}</span>
-                    <div className="provider-rating">
-                      <Star size={14} fill="#ffc939" color="#ffc939" />
-                      <span>{service.provider.rating}</span>
-                      <span className="review-count">({service.provider.reviews} review-uri)</span>
-                    </div>
-                  </div>
+                <div className="service-provider">
+                  <img src={getProfileImageUrl(service.provider)} alt={service.provider.name} className="provider-avatar" onError={handleImageError} />
+                  <span>{service.provider.name}</span>
+                </div>
+                <div className="provider-rating">
+                  <Star size={14} fill="#ffc939" color="#ffc939" />
+                  <span>{service.provider.rating}</span>
+                  <span className="review-count">({service.provider.reviews} review-uri)</span>
                 </div>
                 <div className="service-price">
                   <span className="price">{service.price}</span>

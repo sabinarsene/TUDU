@@ -8,6 +8,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
 import Chat from '../components/Chat/Chat';
 import "./MessagesPage.css";
+import { getProfileImageUrl } from '../utils/imageUtils';
 
 const MessagesPage = () => {
   const { userId } = useParams();
@@ -125,7 +126,9 @@ const MessagesPage = () => {
                       <Avatar
                         size="md"
                         name={conv.user.name}
-                        src={conv.user.image}
+                        src={getProfileImageUrl(conv.user)}
+                        bg={!getProfileImageUrl(conv.user) ? "blue.500" : undefined}
+                        color="white"
                       />
                       {conv.user.isOnline && (
                         <Badge

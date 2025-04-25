@@ -1,9 +1,10 @@
 /* Îmbunătățim aspectul general al paginii */
 .home-page {
-  min-height: 100vh;
+  min-height: 100%;
   background-color: var(--off-white);
   position: relative;
   padding-bottom: 80px;
+  overflow-y: auto;
 }
 
 /* Îmbunătățim aspectul filtrelor de categorii */

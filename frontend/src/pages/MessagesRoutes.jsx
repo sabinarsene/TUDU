@@ -1,11 +1,11 @@
-import { Routes, Route } from "react-router-dom"
-import MessagesPage from "./MessagesPage"
+import { Routes, Route, Navigate } from "react-router-dom"
+import ChatPage from "./ChatPage"
 
 const MessagesRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<MessagesPage />} />
-      <Route path="/:conversationId" element={<MessagesPage />} />
+      <Route path="/" element={<Navigate to="/chat" replace />} />
+      <Route path="/:conversationId" element={<Navigate to={params => `/chat/${params.conversationId}`} replace />} />
     </Routes>
   )
 }

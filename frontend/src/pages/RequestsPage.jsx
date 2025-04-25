@@ -7,7 +7,7 @@ import { Filter, MapPin, Clock, Plus, Check, ChevronDown, Loader, AlertTriangle,
 import "./RequestsPage.css"
 import Header from "../components/Header"
 import { fetchRequests } from "../services/requestApi"
-import { getImageUrl, handleImageError } from "../utils/imageUtils"
+import { getImageUrl, handleImageError, getProfileImageUrl } from "../utils/imageUtils"
 
 // Categoriile principale care vor fi afișate mereu
 const MAIN_CATEGORIES = ["Toate", "Instalații", "Curățenie", "Mobilă", "Transport", "Educație"]
@@ -331,7 +331,7 @@ const RequestsPage = () => {
                 {request.user && (
                   <>
                     <img 
-                      src={getImageUrl(request.user.image)} 
+                      src={getProfileImageUrl(request.user)} 
                       alt={request.user.name || 'User avatar'}
                       onError={handleImageError}
                       className="user-avatar"

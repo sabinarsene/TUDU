@@ -159,12 +159,23 @@
   background-color: white;
 }
 
+/* Fixed search icon positioning and styling */
 .search-icon {
   position: absolute;
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-secondary);
+  pointer-events: none; /* Ensure icon doesn't interfere with input */
+  width: 20px !important;
+  height: 20px !important;
+  stroke-width: 2px;
+  z-index: 2;
+}
+
+/* Ensure the search icon remains visible even with autofill */
+input:-webkit-autofill + .search-icon {
+  z-index: 2;
 }
 
 /* Enhanced navigation styles */
@@ -296,9 +307,24 @@
 }
 
 .profile-image {
-  width: 100%;
-  height: 100%;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
   object-fit: cover;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for Chakra Avatar in header */
+.profile-link .chakra-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 16px !important;
+}
+
+.profile-link .chakra-avatar__initials {
+  font-size: 15px !important;
 }
 
 /* Mobile profile image container */
@@ -316,9 +342,24 @@
 }
 
 .mobile-profile-image {
-  width: 100%;
-  height: 100%;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
   object-fit: cover;
+  margin-right: 16px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for Chakra Avatar in mobile menu */
+.mobile-menu-header .chakra-avatar {
+  width: 48px !important;
+  height: 48px !important;
+  font-size: 18px !important;
+}
+
+.mobile-menu-header .chakra-avatar__initials {
+  font-size: 16px !important;
 }
 
 /* Mobile menu button */

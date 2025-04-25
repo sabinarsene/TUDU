@@ -19,7 +19,8 @@ import "./ServiceDetailsPage.css"
 import { getServiceById } from '../services/serviceApi'
 import { useAuth } from "../contexts/AuthContext"
 import { addServiceToFavorites, removeServiceFromFavorites, isServiceFavorited } from "../services/favoriteApi"
-import { getImageUrl, handleImageError } from "../utils/imageUtils"
+import { getImageUrl, handleImageError, getProfileImageUrl } from "../utils/imageUtils"
+import { ChakraProvider, Avatar } from '@chakra-ui/react'
 
 const ServiceDetailsPage = () => {
   const { serviceId } = useParams()
@@ -231,11 +232,13 @@ const ServiceDetailsPage = () => {
           <h2>Despre prestator</h2>
           <div className="provider-card">
             <div className="provider-info">
-              <img
-                src={getImageUrl(service.provider?.image)}
-                alt={service.provider?.name}
+              <Avatar
+                src={getProfileImageUrl(service.provider)}
+                name={service.provider?.name}
+                size="xl"
+                bg={!getProfileImageUrl(service.provider) ? "blue.500" : undefined}
+                color="white"
                 className="provider-image"
-                onError={handleImageError}
               />
               <div className="provider-details">
                 <h3 className="provider-name">{service.provider?.name}</h3>
@@ -287,7 +290,14 @@ const ServiceDetailsPage = () => {
                 <div key={review.id} className="review-card">
                   <div className="review-header">
                     <div className="reviewer-info">
-                      <img src={review.user.image} alt={review.user.name} className="reviewer-image" />
+                      <Avatar
+                        src={getProfileImageUrl(review.user)}
+                        name={review.user.name}
+                        size="md"
+                        bg={!getProfileImageUrl(review.user) ? "blue.500" : undefined}
+                        color="white"
+                        className="reviewer-image"
+                      />
                       <div className="reviewer-details">
                         <h4 className="reviewer-name">{review.user.name}</h4>
                         <span className="review-date">{review.date}</span>

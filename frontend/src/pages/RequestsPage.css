@@ -1,7 +1,8 @@
 /* Îmbunătățim aspectul general al paginii */
 .requests-page {
-  min-height: 100vh;
   background-color: var(--off-white);
+  min-height: 100%;
+  overflow-y: auto;
   position: relative;
   padding-bottom: 80px;
 }

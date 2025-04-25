@@ -1,18 +1,103 @@
 "use client"
 
 import { useState } from "react"
-import { Link } from "react-router-dom"
-import { Search, Bell, Menu, X, MessageCircle } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+import { Search, Bell, Menu, X, MessageCircle, LogOut, User, Settings } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
-import { getProfileImageUrl, handleImageError } from "../utils/imageUtils"
+import { useMessages } from "../contexts/MessageContext"
+import { getProfileImageUrl, handleImageError, getImageUrl } from "../utils/imageUtils"
 import "./Header.css"
 import logoImage from "../assets/images/favicon.png"
+import { Avatar } from '@chakra-ui/react'
+import defaultProfileImage from '../assets/default-profile.jpg'
 
 const Header = () => {
   const { user, logoutUser } = useAuth()
+  const { unreadCount: unreadMessages } = useMessages()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Debug the profile image
+  console.log("User in Header:", user);
+  console.log("User profile image properties:", {
+    profileImage: user?.profileImage,
+    profile_image: user?.profile_image,
+    image: user?.image
+  });
+  
+  // Get user's display name - use different property combinations based on what's available
+  const getUserName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    } else if (user?.first_name && user?.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    } else if (user?.name) {
+      return user.name;
+    } else {
+      return 'User';
+    }
+  };
+
+  // Direct function to get the user's profile image URL
+  const getUserProfileImage = () => {
+    // No user = no image
+    if (!user) {
+      console.log("No user object found");
+      return null;
+    }
+    
+    console.log("USER OBJECT STRUCTURE:", JSON.stringify(user, null, 2));
+    
+    // Check ALL possible properties where the image path might be stored
+    const imagePath = 
+      // Backend uses snake_case
+      user.profile_image || 
+      // Frontend might use camelCase
+      user.profileImage || 
+      // Simple property name
+      user.image ||
+      // Sometimes stored directly in the user object
+      (user.user && (user.user.profile_image || user.user.profileImage || user.user.image));
+    
+    console.log("PROFILE IMAGE PATH FOUND:", imagePath);
+    
+    // If no image path found, return null to display initials
+    if (!imagePath) {
+      console.log("No image path found in user object");
+      return null;
+    }
+    
+    // If path is already a complete URL (starts with http)
+    if (imagePath.startsWith('http')) {
+      console.log("Complete URL found:", imagePath);
+      return imagePath;
+    }
+    
+    // If it's a blob URL (from file input)
+    if (imagePath.startsWith('blob:')) {
+      console.log("Blob URL found:", imagePath);
+      return imagePath;
+    }
+    
+    // Get API base URL - ensure it doesn't end with a slash
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    
+    // If it includes the uploads path or is an absolute path
+    if (imagePath.includes('/uploads/') || imagePath.startsWith('/')) {
+      // Make sure path starts with /
+      const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+      const fullUrl = `${baseUrl}${normalizedPath}`;
+      console.log("Server full image URL:", fullUrl);
+      return fullUrl;
+    }
+    
+    // Last resort - just try to use the path as is with the API URL
+    const fullUrl = `${baseUrl}/${imagePath}`;
+    console.log("Last resort URL:", fullUrl);
+    return fullUrl;
+  };
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
@@ -64,18 +149,22 @@ const Header = () => {
           </Link>
           <Link to="/chat" className="nav-icon-link" title="Mesaje">
             <MessageCircle size={24} />
-            <span className="notification-badge">3</span>
+            {unreadMessages > 0 && (
+              <span className="notification-badge">{unreadMessages > 99 ? '99+' : unreadMessages}</span>
+            )}
           </Link>
           <Link to="/notifications" className="nav-icon-link" title="Notificări">
             <Bell size={24} />
             <span className="notification-badge">5</span>
           </Link>
           <Link to="/profile" className="profile-link">
-            <img 
-              src={getProfileImageUrl(user)} 
-              alt="Profile" 
+            <Avatar 
+              src={getUserProfileImage()}
+              name={getUserName()}
+              size="sm"
+              bg={!getUserProfileImage() ? "blue.500" : undefined}
+              color="white"
               className="profile-image" 
-              onError={handleImageError}
             />
           </Link>
 
@@ -94,14 +183,16 @@ const Header = () => {
       <div className={`mobile-menu ${mobileMenuOpen ? "open" : ""}`}>
         <div className="mobile-menu-content">
           <div className="mobile-menu-header">
-            <img 
-              src={getProfileImageUrl(user)} 
-              alt="Profile" 
+            <Avatar 
+              src={getUserProfileImage()}
+              name={getUserName()}
+              size="md"
+              bg={!getUserProfileImage() ? "blue.500" : undefined}
+              color="white"
               className="mobile-profile-image" 
-              onError={handleImageError}
             />
             <div className="mobile-profile-info">
-              <h3>{user ? `${user.firstName} ${user.lastName}` : 'Utilizator'}</h3>
+              <h3>{getUserName()}</h3>
               <p>Vezi profilul tău</p>
             </div>
           </div>

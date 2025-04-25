@@ -10,8 +10,9 @@ import { fetchUserRequests, deleteRequest } from "../services/requestApi"
 import { FaMapMarkerAlt, FaClock, FaEye } from 'react-icons/fa'
 import defaultProfileImage from '../assets/default-profile.jpg'
 import UserRating from "../components/UserRating"
-import { getImageUrl, handleImageError } from "../utils/imageUtils"
+import { getImageUrl, handleImageError, getProfileImageUrl } from "../utils/imageUtils"
 import { getFavoriteServices, getFavoriteRequests } from "../services/favoriteApi"
+import { Avatar } from '@chakra-ui/react'
 
 const ProfilePage = () => {
   const { user, logoutUser, loginUser } = useAuth()
@@ -436,6 +437,48 @@ const ProfilePage = () => {
     }
   };
 
+  // Custom function to get profile image URL that handles all formats consistently
+  const getProfileImageFullUrl = (profileUser) => {
+    if (!profileUser) return null;
+    
+    console.log("ProfilePage - User Object:", profileUser);
+    
+    // Check all possible properties where image might be stored
+    const imagePath = 
+      profileUser.profile_image || 
+      profileUser.profileImage || 
+      profileUser.image;
+      
+    console.log("ProfilePage - Image path found:", imagePath);
+      
+    // No image path found
+    if (!imagePath) return null;
+    
+    // Complete URL
+    if (imagePath.startsWith('http')) return imagePath;
+    
+    // Blob URL
+    if (imagePath.startsWith('blob:')) return imagePath;
+    
+    // Get API base URL - ensure it doesn't end with a slash
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    
+    // If it includes the uploads path or is an absolute path
+    if (imagePath.includes('/uploads/') || imagePath.startsWith('/')) {
+      // Make sure path starts with /
+      const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+      const fullUrl = `${baseUrl}${normalizedPath}`;
+      console.log("Server full image URL:", fullUrl);
+      return fullUrl;
+    }
+    
+    // Last resort - just try to use the path as is with the API URL
+    const fullUrl = `${baseUrl}/${imagePath}`;
+    console.log("Last resort URL:", fullUrl);
+    return fullUrl;
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -486,11 +529,13 @@ const ProfilePage = () => {
                   <Edit size={20} />
                 </div>
               )}
-              <img
-                src={getImageUrl(profileUser.profileImage) || defaultProfileImage}
-                alt={`${profileUser.firstName} ${profileUser.lastName}`}
+              <Avatar
+                src={getProfileImageFullUrl(profileUser)}
+                name={`${profileUser.firstName} ${profileUser.lastName}`}
+                size="xl"
+                bg={!getProfileImageFullUrl(profileUser) ? "blue.500" : undefined}
+                color="white"
                 className="profile-image"
-                onError={handleImageError}
               />
               <input
                 type="file"
@@ -502,11 +547,13 @@ const ProfilePage = () => {
             </div>
           ) : (
             <div className="profile-image-container">
-              <img
-                src={getImageUrl(profileUser.profileImage) || defaultProfileImage}
-                alt={`${profileUser.firstName} ${profileUser.lastName}`}
+              <Avatar
+                src={getProfileImageFullUrl(profileUser)}
+                name={`${profileUser.firstName} ${profileUser.lastName}`}
+                size="xl"
+                bg={!getProfileImageFullUrl(profileUser) ? "blue.500" : undefined}
+                color="white"
                 className="profile-image"
-                onError={handleImageError}
               />
             </div>
           )}
@@ -689,7 +736,7 @@ const ProfilePage = () => {
                       {!isOwnProfile && service.provider && (
                         <div className="service-provider">
                           <img
-                            src={getImageUrl(service.provider.image)}
+                            src={getProfileImageUrl(service.provider)}
                             alt={service.provider.name}
                             className="provider-image"
                             onError={handleImageError}

@@ -21,7 +21,8 @@ import "./RequestDetailsPage.css"
 import { getRequestById } from '../services/requestApi'
 import { useAuth } from "../contexts/AuthContext"
 import { addRequestToFavorites, removeRequestFromFavorites, isRequestFavorited } from "../services/favoriteApi"
-import { getImageUrl, handleImageError } from "../utils/imageUtils"
+import { getImageUrl, handleImageError, getProfileImageUrl } from "../utils/imageUtils"
+import { ChakraProvider, Avatar } from '@chakra-ui/react'
 
 const RequestDetailsPage = () => {
   const { requestId } = useParams()
@@ -293,11 +294,13 @@ const RequestDetailsPage = () => {
             <h2>Despre solicitant</h2>
             <div className="user-card">
               <div className="user-info">
-                <img
-                  src={getImageUrl(request.user?.image)}
-                  alt={request.user?.name}
+                <Avatar
+                  src={getProfileImageUrl(request.user)}
+                  name={request.user?.name}
+                  size="xl"
+                  bg={!getProfileImageUrl(request.user) ? "blue.500" : undefined}
+                  color="white"
                   className="user-image"
-                  onError={handleImageError}
                 />
                 <div className="user-details">
                   <div className="user-name-wrapper">

@@ -1,7 +1,9 @@
 /* Îmbunătățim aspectul general al paginii */
 .request-details-page {
-  min-height: 100vh;
-  background-color: var(--off-white);
+  background-color: var(--bg-light);
+  min-height: 100%;
+  overflow-y: auto;
+  padding-bottom: 40px;
 }
 
 /* Header cu gradient */
@@ -354,11 +356,14 @@
   color: inherit;
 }
 
-.client-image {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
+.user-image {
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 50% !important;
   object-fit: cover;
+  margin-right: 16px;
+  border: 2px solid white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .client-details {

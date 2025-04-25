@@ -119,4 +119,39 @@ export const markMessageRead = async (messageId) => {
     console.error('Error marking message as read:', error);
     throw error;
   }
+};
+
+/**
+ * Mark all messages from a specific sender as read
+ * @param {string} senderId - ID of the sender
+ * @returns {Promise<Object>} Response data with count of marked messages
+ */
+export const markAllMessagesRead = async (senderId) => {
+  try {
+    const response = await messageApi.post(`/mark-read/${senderId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get total unread messages count for current user
+ * @returns {Promise<Number>} Count of all unread messages
+ */
+export const getUnreadMessagesCount = async () => {
+  try {
+    const conversations = await getConversations();
+    if (!Array.isArray(conversations)) {
+      return 0;
+    }
+    
+    // Sum up all unread counts from all conversations
+    return conversations.reduce((total, conversation) => 
+      total + (conversation.unreadCount || 0), 0);
+  } catch (error) {
+    console.error('Error getting unread messages count:', error);
+    return 0; // Return 0 instead of throwing to avoid UI errors
+  }
 }; 

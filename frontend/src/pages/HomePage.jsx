@@ -7,7 +7,7 @@ import "./HomePage.css"
 import Header from "../components/Header"
 import { getServices } from '../services/serviceApi'
 import { Loader } from "lucide-react"
-import { getImageUrl, handleImageError } from "../utils/imageUtils"
+import { getImageUrl, handleImageError, getProfileImageUrl } from "../utils/imageUtils"
 import { FaPlus } from 'react-icons/fa'
 
 // Categoriile principale care vor fi afișate mereu
@@ -285,7 +285,7 @@ const HomePage = () => {
                 </div>
                 <div className="service-provider">
                   <img
-                    src={getImageUrl(service.provider?.image)}
+                    src={getProfileImageUrl(service.provider)}
                     alt={service.provider?.name}
                     className="provider-image"
                     onError={handleImageError}

@@ -42,8 +42,26 @@ class SocketService {
     // Store socket mapping
     this.userSockets.set(userId, socket.id);
 
-    // Update user status to online
-    await this.updateUserStatus(userId, 'online');
+    try {
+      // Verifică dacă utilizatorul există în baza de date
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !user) {
+        console.error(`[Socket] User ${userId} not found or error:`, userError);
+        socket.disconnect();
+        return;
+      }
+
+      // Update user status to online
+      await this.updateUserStatus(userId, 'online');
+    } catch (err) {
+      console.error(`[Socket] Error in connection handling for user ${userId}:`, err);
+      // Nu deconectăm sesiunea - e mai bine să permitem conectarea chiar dacă actualizarea de status eșuează
+    }
 
     // Set up event listeners
     socket.on('disconnect', () => this.handleDisconnect(socket));
@@ -56,24 +74,58 @@ class SocketService {
   }
 
   async handleDisconnect(socket) {
-    const userId = socket.userId;
-    console.log(`[Socket] User ${userId} disconnected`);
+    try {
+      const userId = socket.userId;
+      console.log(`[Socket] User ${userId} disconnected`);
 
-    this.userSockets.delete(userId);
-    await this.updateUserStatus(userId, 'offline');
+      // Ștergem mapearea socket-ului
+      this.userSockets.delete(userId);
+      
+      // Verificăm dacă utilizatorul mai are alte socket-uri active
+      // Dacă nu, setăm statusul la offline
+      const hasOtherActiveSessions = Array.from(this.userSockets.entries())
+        .some(([id, _]) => id === userId);
+      
+      if (!hasOtherActiveSessions) {
+        await this.updateUserStatus(userId, 'offline');
+      }
+    } catch (error) {
+      console.error('[Socket] Error in disconnect handler:', error);
+    }
   }
 
   async updateUserStatus(userId, status) {
     try {
-      const { error } = await supabase
+      // Verifică mai întâi dacă există deja o înregistrare
+      const { data: existingStatus } = await supabase
         .from('user_status')
-        .upsert({
-          user_id: userId,
-          status,
-          last_seen: new Date().toISOString()
-        });
+        .select('user_id')
+        .eq('user_id', userId)
+        .single();
 
-      if (error) throw error;
+      if (existingStatus) {
+        // Dacă înregistrarea există, actualizează-o
+        const { error } = await supabase
+          .from('user_status')
+          .update({
+            status,
+            last_seen: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+      } else {
+        // Dacă înregistrarea nu există, inserează o nouă înregistrare
+        const { error } = await supabase
+          .from('user_status')
+          .insert({
+            user_id: userId,
+            status,
+            last_seen: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      }
     } catch (error) {
       console.error('[Socket] Error updating user status:', error);
     }
@@ -83,24 +135,48 @@ class SocketService {
     try {
       const { receiverId, content, replyTo = null } = data;
       
-      if (!receiverId || !content) {
-        throw new Error('Missing required fields');
+      // Validare date
+      if (!receiverId) {
+        throw new Error('Missing receiverId');
+      }
+      
+      if (!content || typeof content !== 'string' || content.trim() === '') {
+        throw new Error('Invalid message content');
       }
 
       const senderId = socket.userId;
 
-      // Save message to database
+      // Verificăm dacă utilizatorii există
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id')
+        .in('id', [senderId, receiverId]);
+
+      if (usersError) throw usersError;
+      
+      if (!users || users.length !== 2) {
+        throw new Error('One or both users do not exist');
+      }
+
+      // Salvăm mesajul în baza de date
       const { data: message, error } = await supabase
         .from('messages')
         .insert({
           sender_id: senderId,
           receiver_id: receiverId,
-          content,
+          content: content.trim(),
           reply_to: replyTo,
           created_at: new Date().toISOString()
         })
         .select(`
-          *,
+          id,
+          content,
+          created_at,
+          read_at,
+          edited_at,
+          sender_id,
+          receiver_id,
+          reply_to,
           sender:users!sender_id(
             id, first_name, last_name, profile_image,
             user_status(status, last_seen)
@@ -114,15 +190,22 @@ class SocketService {
 
       if (error) throw error;
 
-      // Send to both sender and receiver
+      // Trimitem mesajul către expeditor și destinatar
       socket.emit('message_received', message);
       const receiverSocket = this.userSockets.get(receiverId);
       if (receiverSocket) {
         this.io.to(receiverSocket).emit('message_received', message);
       }
+      
+      // Returnăm mesajul către expeditor pentru confirmare
+      return message;
     } catch (error) {
       console.error('[Socket] Error sending message:', error);
-      socket.emit('message_error', { error: 'Failed to send message' });
+      socket.emit('message_error', { 
+        error: 'Failed to send message', 
+        details: error.message 
+      });
+      return null;
     }
   }
 
@@ -221,31 +304,72 @@ class SocketService {
 
   async handleMessageRead(socket, data) {
     try {
-      const { messageId } = data;
+      const userId = socket.userId;
+      // Putem primi fie un ID de mesaj specific, fie un ID de utilizator pentru a marca toate mesajele
+      const { messageId, senderId } = data;
       
-      if (!messageId) {
-        throw new Error('Missing messageId');
+      if (!messageId && !senderId) {
+        throw new Error('Missing messageId or senderId');
       }
 
-      const { data: message, error } = await supabase
-        .from('messages')
-        .update({
-          read_at: new Date().toISOString()
-        })
-        .eq('id', messageId)
-        .eq('receiver_id', socket.userId)
-        .select()
-        .single();
+      if (messageId) {
+        // Marcăm un singur mesaj ca citit
+        const { data: message, error } = await supabase
+          .from('messages')
+          .update({
+            read_at: new Date().toISOString()
+          })
+          .eq('id', messageId)
+          .eq('receiver_id', userId)
+          .select('sender_id, id')
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Notify sender
-      const senderSocket = this.userSockets.get(message.sender_id);
-      if (senderSocket) {
-        this.io.to(senderSocket).emit('message_read', { messageId });
+        if (message) {
+          // Notificăm expeditorul
+          const senderSocket = this.userSockets.get(message.sender_id);
+          if (senderSocket) {
+            this.io.to(senderSocket).emit('message_read', { messageId: message.id });
+          }
+        }
+      } else if (senderId) {
+        // Marcăm toate mesajele de la un expeditor ca citite
+        const { data: messages, error } = await supabase
+          .from('messages')
+          .update({
+            read_at: new Date().toISOString()
+          })
+          .eq('sender_id', senderId)
+          .eq('receiver_id', userId)
+          .is('read_at', null)
+          .select('id');
+
+        if (error) throw error;
+
+        if (messages && messages.length > 0) {
+          // Notificăm expeditorul pentru toate mesajele
+          const senderSocket = this.userSockets.get(senderId);
+          if (senderSocket) {
+            this.io.to(senderSocket).emit('messages_read_all', { 
+              messageIds: messages.map(m => m.id),
+              receiverId: userId
+            });
+          }
+          
+          // Emitem și către client
+          socket.emit('messages_updated', {
+            messageIds: messages.map(m => m.id),
+            status: 'read'
+          });
+        }
       }
     } catch (error) {
-      console.error('[Socket] Error marking message as read:', error);
+      console.error('[Socket] Error marking message(s) as read:', error);
+      socket.emit('message_error', { 
+        error: 'Failed to mark message(s) as read',
+        details: error.message
+      });
     }
   }
 }
